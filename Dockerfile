@@ -9,6 +9,13 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY tsconfig.json vite.config.ts tailwind.config.ts postcss.config.js index.html ./
 COPY src ./src
 
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_AUTH_DOMAIN
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_STORAGE_BUCKET
+ARG VITE_FIREBASE_MESSAGING_SENDER_ID
+ARG VITE_FIREBASE_APP_ID
+
 RUN npm run build
 
 # ── Runtime stage ────────────────────────────────────────────
