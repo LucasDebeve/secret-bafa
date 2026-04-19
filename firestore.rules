@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Tout interdire par defaut
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /formations/{fid} {
+      // Lisible pour verifier le code au login
+      allow read: if true;
+      // Creation autorisee (createFormation), modification interdite
+      allow create: if request.resource.data.keys().hasAll(['name','createdAt']);
+      allow update, delete: if false;
+
+      // Comptes utilisateurs : lecture autorisee (login + DataContext),
+      // ecriture limitee a la creation avec les champs requis
+      match /users/{uid} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasAll(['id','prenom','nom','isAdmin','pwHash','pwSalt']);
+        allow update, delete: if false;
+      }
+
+      // Session de vote : lisible, modifiable avec forme valide
+      match /session/{doc} {
+        allow read: if true;
+        allow write: if request.resource.data.keys().hasOnly(
+          ['open','sessId','label','sessCount','openedAt','closedAt','krappoSession']);
+      }
+
+      // Secrets : lisibles, creation avec forme et taille valides, mise a jour limitee
+      match /secrets/{sid} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasAll(['uid','text','createdAt'])
+                      && request.resource.data.text.size() >= 5
+                      && request.resource.data.text.size() <= 300;
+        allow update: if request.resource.data.keys().hasAny(['text','found','foundBy']);
+        allow delete: if true;
+      }
+
+      // Votes : creation sans le champ `correct` (calcule cote admin uniquement)
+      match /votes/{vid} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasAll(
+                        ['voter','sid','secretUid','guess','validated','pointsGiven','sessId','ts'])
+                      && !('correct' in request.resource.data)
+                      && request.resource.data.validated == false
+                      && request.resource.data.pointsGiven == false;
+        allow update: if true;
+        allow delete: if false;
+      }
+
+      // Points : lisibles et modifiables (limitation Track A)
+      match /points/{uid} {
+        allow read: if true;
+        allow write: if true;
+      }
+
+      // Defis : lisibles et modifiables (limitation Track A)
+      match /defis/{did} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+  }
+}
