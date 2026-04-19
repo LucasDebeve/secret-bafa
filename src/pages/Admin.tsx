@@ -14,12 +14,12 @@ import AdminUsers from "./admin/AdminUsers";
 type Tab = "s" | "v" | "d" | "u";
 
 export default function Admin() {
-  const { fid } = useAuth();
+  const { me, fid } = useAuth();
   const { cS, cV, cP, cU } = useData();
   const toast = useToast();
   const [tab, setTab] = useState<Tab>("s");
 
-  if (!fid) return null;
+  if (!fid || !me?.isAdmin) return null;
 
   const totalPts = Object.values(cP).reduce((a, p) => a + (p.total || 0), 0);
 
@@ -53,7 +53,7 @@ export default function Admin() {
 
   return (
     <div>
-      <div className="grid grid-cols-4 gap-4 mb-5 max-md:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 mb-4 md:grid-cols-4 md:gap-4 md:mb-5">
         <div className="stat-card"><div className="stat-label">Secrets</div><div className="stat-value">{cS.length}</div></div>
         <div className="stat-card"><div className="stat-label">Joueurs</div><div className="stat-value">{cU.length}</div></div>
         <div className="stat-card"><div className="stat-label">Votes</div><div className="stat-value">{cV.length}</div></div>

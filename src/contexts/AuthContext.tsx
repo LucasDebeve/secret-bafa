@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { getDoc, getDocs, setDoc, serverTimestamp } from "firebase/firestore";
-import { collection } from "firebase/firestore";
-import { C, F, db, fDoc, formationDoc } from "../lib/firebase";
+import { getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { fDoc, formationDoc } from "../lib/firebase";
 import { genSalt, hashPassword, normFid } from "../lib/crypto";
 import type { SafeUser } from "../types";
 
@@ -40,11 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const fSnap = await getDoc(formationDoc(code));
       if (!fSnap.exists()) return "Formation introuvable. Verifie le code.";
-      const uSnap = await getDocs(collection(db, F, code, C.U));
-      const user = uSnap.docs
-        .map((d) => d.data() as { id: string; pwHash?: string; pwSalt?: string; prenom?: string; nom?: string; isAdmin?: boolean })
-        .find((u) => u.id.toLowerCase() === id.toLowerCase());
-      if (!user) return "Identifiant ou mot de passe incorrect.";
+      const uSnap = await getDoc(fDoc(code, "U", id.trim()));
+      if (!uSnap.exists()) return "Identifiant ou mot de passe incorrect.";
+      const user = uSnap.data() as { id: string; pwHash?: string; pwSalt?: string; prenom?: string; nom?: string; isAdmin?: boolean };
       const hash = await hashPassword(pw, user.pwSalt || "");
       if (hash !== user.pwHash) return "Identifiant ou mot de passe incorrect.";
       const safe: SafeUser = {

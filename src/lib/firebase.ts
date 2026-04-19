@@ -2,12 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc } from "firebase/firestore";
 
 const cfg = {
-  apiKey: "AIzaSyDEP5bGDSeM9yFtsiTndP4u5cchfIgoazg",
-  authDomain: "secret-bafa-new2.firebaseapp.com",
-  projectId: "secret-bafa-new2",
-  storageBucket: "secret-bafa-new2.firebasestorage.app",
-  messagingSenderId: "950509113898",
-  appId: "1:950509113898:web:24ffd605a66353bc8ca953",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 export const app = initializeApp(cfg);

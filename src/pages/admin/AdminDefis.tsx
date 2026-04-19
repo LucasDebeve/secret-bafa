@@ -12,7 +12,7 @@ const STATUS_BADGE: Record<string, { cls: string; label: string }> = {
 };
 
 export default function AdminDefis() {
-  const { fid } = useAuth();
+  const { me, fid } = useAuth();
   const { cS, cD } = useData();
   const toast = useToast();
   const [to, setTo] = useState("");
@@ -21,7 +21,7 @@ export default function AdminDefis() {
   const [target, setTarget] = useState("");
   const [err, setErr] = useState("");
 
-  if (!fid) return null;
+  if (!fid || !me?.isAdmin) return null;
 
   const uids = [...new Set(cS.map((s) => s.uid))].filter((u) => u !== "admin");
 
@@ -65,11 +65,13 @@ export default function AdminDefis() {
     toast("Defi supprime.", "ok");
   };
 
+  const empty = !cD.length;
+
   return (
     <div className="card">
       <div className="card-head"><div className="card-title">Gerer les defis</div></div>
       <div className="card-body">
-        <div className="grid grid-cols-2 gap-3 mb-4 max-md:grid-cols-1">
+        <div className="grid grid-cols-1 gap-3 mb-4 md:grid-cols-2">
           <div>
             <label className="lbl">DONNER LE DEFI A</label>
             <select className="inp" value={to} onChange={(e) => setTo(e.target.value)}>
@@ -102,11 +104,13 @@ export default function AdminDefis() {
         {err && <div className="err mb-2">{err}</div>}
         <button className="btn btn-sm" onClick={create}>Creer le defi</button>
       </div>
-      <div className="card-body card-body-tight border-t border-app-border overflow-x-auto">
+
+      {/* Table — desktop */}
+      <div className="hidden md:block card-body card-body-tight border-t border-app-border overflow-x-auto">
         <table className="tbl">
           <thead><tr><th>Assigne a</th><th>Faire voter</th><th>Secret</th><th>Pour</th><th>Statut</th><th>Action</th></tr></thead>
           <tbody>
-            {!cD.length ? (
+            {empty ? (
               <tr><td colSpan={6} className="text-center py-6 text-app-text3">Aucun defi.</td></tr>
             ) : cD.map((d) => {
               const s = cS.find((x) => x.id === d.secretId);
@@ -132,6 +136,37 @@ export default function AdminDefis() {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Cartes — mobile */}
+      <div className="md:hidden border-t border-app-border">
+        {empty ? (
+          <div className="empty-state">Aucun defi.</div>
+        ) : cD.map((d) => {
+          const s = cS.find((x) => x.id === d.secretId);
+          const st = STATUS_BADGE[d.status] || { cls: "badge-gray", label: "—" };
+          return (
+            <div key={d.id} className="px-4 py-3.5 border-b border-app-border last:border-b-0">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <span className="font-semibold text-accent text-[13px]">{d.assignedTo}</span>
+                <span className={`badge ${st.cls}`}>{st.label}</span>
+              </div>
+              <div className="text-[12px] text-app-text3 mb-1">
+                Faire voter <strong className="text-brand-purple">{d.targetVoter}</strong> pour <strong className="text-accent">{d.targetAuthor}</strong>
+              </div>
+              {s && <div className="text-[12px] italic text-app-text2 mb-2.5">"{s.text.slice(0, 60)}{s.text.length > 60 ? "..." : ""}"</div>}
+              <div className="flex gap-1.5 flex-wrap">
+                {d.status === "pending" && (
+                  <>
+                    <button className="btn btn-green btn-sm" onClick={() => resolveDefi(d.id, "success")}>Reussi</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => resolveDefi(d.id, "failed")}>Echoue</button>
+                  </>
+                )}
+                <button className="btn btn-ghost btn-sm" onClick={() => del(d.id)}>Suppr.</button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

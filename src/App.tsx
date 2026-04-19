@@ -16,15 +16,27 @@ import type { View } from "./types";
 function Shell() {
   const { me, fid } = useAuth();
   const [view, setView] = useState<View>("home");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!me || !fid) return <Auth />;
 
   return (
     <div className="min-h-screen flex">
-      <Sidebar view={view} onNavigate={setView} />
-      <main className="ml-[220px] flex-1 min-h-screen">
-        <Topbar view={view} />
-        <div className="p-7 max-md:p-4">
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-[90] md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <Sidebar
+        view={view}
+        onNavigate={setView}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+      <main className="flex-1 min-h-screen md:ml-[220px]">
+        <Topbar view={view} onMenuToggle={() => setSidebarOpen((o: boolean) => !o)} />
+        <div className="p-4 md:p-7">
           {view === "home" && <Home onNavigate={setView} />}
           {view === "secrets" && <Secrets />}
           {view === "revelations" && <Revelations />}

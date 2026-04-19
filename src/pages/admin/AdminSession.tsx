@@ -5,10 +5,10 @@ import { useData } from "../../contexts/DataContext";
 import { useToast } from "../../contexts/ToastContext";
 
 export default function AdminSession() {
-  const { fid } = useAuth();
+  const { me, fid } = useAuth();
   const { cSess, cV } = useData();
   const toast = useToast();
-  if (!fid) return null;
+  if (!fid || !me?.isAdmin) return null;
 
   const openVotes = async () => {
     if (cSess.open) return toast("Session deja ouverte.", "nf");

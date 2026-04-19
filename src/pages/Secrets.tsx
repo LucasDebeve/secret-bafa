@@ -64,7 +64,6 @@ export default function Secrets() {
         sid,
         secretUid: s.uid,
         guess: guessed,
-        correct,
         validated: false,
         pointsGiven: false,
         sessId: cSess.sessId,

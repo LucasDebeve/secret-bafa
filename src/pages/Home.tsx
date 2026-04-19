@@ -37,7 +37,7 @@ export default function Home({ onNavigate }: { onNavigate: (v: View) => void }) 
         <span className={`badge ${cSess.krappoSession ? "badge-green" : "badge-gray"}`}>{cSess.krappoSession ? "Lie" : "Non lie"}</span>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-6 max-md:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 mb-5 md:grid-cols-4 md:gap-4 md:mb-6">
         <div className="stat-card">
           <div className="stat-label">Secrets deposes</div>
           <div className="stat-value">{cS.length}</div>

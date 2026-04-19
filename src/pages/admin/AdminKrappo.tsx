@@ -7,7 +7,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { genSalt, hashPassword } from "../../lib/crypto";
 
 export default function AdminKrappo() {
-  const { fid } = useAuth();
+  const { me, fid } = useAuth();
   const { cSess } = useData();
   const toast = useToast();
 
@@ -18,7 +18,7 @@ export default function AdminKrappo() {
   const [preview, setPreview] = useState("");
   const [err, setErr] = useState("");
 
-  if (!fid) return null;
+  if (!fid || !me?.isAdmin) return null;
 
   const link = async () => {
     if (!krSid.trim()) return toast("Entre un ID de session.", "er");
@@ -29,7 +29,7 @@ export default function AdminKrappo() {
   const create = async () => {
     setErr("");
     if (!prenom || !nom || !pw) return setErr("Remplis tous les champs.");
-    if (pw.length < 4) return setErr("Mot de passe trop court.");
+    if (pw.length < 6) return setErr("Mot de passe trop court (6 caracteres min).");
     const base = prenom + "." + nom[0].toUpperCase();
     const snap = await getDocs(fCol(fid, "U"));
     const ids = snap.docs.map((d) => (d.data() as { id: string }).id.toLowerCase());
@@ -59,7 +59,7 @@ export default function AdminKrappo() {
 
         <div className="mt-3.5 pt-3.5 border-t border-app-border">
           <div className="text-[12px] font-semibold mb-2.5">Creer des comptes manuellement</div>
-          <div className="grid grid-cols-2 gap-3 mb-2.5 max-[480px]:grid-cols-1">
+          <div className="grid grid-cols-1 gap-3 mb-2.5 sm:grid-cols-2">
             <div>
               <label className="lbl">PRENOM</label>
               <input className="inp" value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Adrien" />

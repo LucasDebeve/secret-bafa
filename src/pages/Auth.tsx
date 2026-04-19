@@ -14,6 +14,8 @@ export default function Auth() {
   const [lp, setLp] = useState("");
   const [loginErr, setLoginErr] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
+  const [failCount, setFailCount] = useState(0);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
 
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -24,11 +26,24 @@ export default function Auth() {
   const [creating, setCreating] = useState(false);
 
   const onLogin = async () => {
+    const remaining = cooldownUntil - Date.now();
+    if (remaining > 0) {
+      setLoginErr(`Trop de tentatives. Attends ${Math.ceil(remaining / 1000)}s.`);
+      return;
+    }
     setLoginErr("");
     setLoggingIn(true);
     const err = await login(lf, li, lp);
     setLoggingIn(false);
-    if (err) setLoginErr(err);
+    if (err) {
+      const next = failCount + 1;
+      setFailCount(next);
+      if (next >= 3) setCooldownUntil(Date.now() + 15_000);
+      setLoginErr(err);
+    } else {
+      setFailCount(0);
+      setCooldownUntil(0);
+    }
   };
 
   const onCreate = async () => {
@@ -64,7 +79,7 @@ export default function Auth() {
               <label className="lbl">MOT DE PASSE</label>
               <input type="password" className="inp" value={lp} onChange={(e) => setLp(e.target.value)} placeholder="••••••••" />
               {loginErr && <div className="err">{loginErr}</div>}
-              <button className="btn btn-full" disabled={loggingIn} onClick={onLogin}>
+              <button className="btn btn-full" disabled={loggingIn || Date.now() < cooldownUntil} onClick={onLogin}>
                 {loggingIn ? "Connexion..." : "Se connecter"}
               </button>
               <div className="mt-3.5 pt-3.5 border-t border-app-border text-[12px] text-app-text3">

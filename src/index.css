@@ -44,12 +44,12 @@
   .tab.on { @apply bg-app-surface text-app-text shadow-card; }
 
   /* Cards */
-  .card { @apply bg-app-surface border border-app-border rounded-[10px] mb-5; }
+  .card { @apply bg-app-surface border border-app-border rounded-[10px] mb-4; }
   .card-head {
-    @apply px-5 py-4 border-b border-app-border flex items-center justify-between gap-3;
+    @apply px-4 py-3.5 md:px-5 md:py-4 border-b border-app-border flex items-center justify-between gap-3;
   }
   .card-title { @apply text-[14px] font-semibold; }
-  .card-body { @apply p-5; }
+  .card-body { @apply p-4 md:p-5; }
   .card-body-tight { @apply p-0; }
 
   /* Badges */
@@ -72,7 +72,7 @@
 
   /* Secret cards */
   .secret-card {
-    @apply bg-app-surface border border-app-border rounded-[10px] px-[18px] py-4 transition;
+    @apply bg-app-surface border border-app-border rounded-[10px] px-4 py-3.5 md:px-[18px] md:py-4 transition;
   }
   .secret-card:hover { @apply border-app-border2; }
   .secret-card.mine { @apply border-l-[3px] border-l-accent; }
@@ -103,10 +103,10 @@
   .sess-banner-wait { @apply bg-app-bg border border-app-border text-app-text3; }
 
   /* Stat cards */
-  .stat-card { @apply bg-app-surface border border-app-border rounded-[10px] px-5 py-[18px]; }
-  .stat-label { @apply text-[12px] font-medium text-app-text3 mb-1.5 flex items-center gap-1.5; }
-  .stat-value { @apply text-[26px] font-bold text-app-text leading-none; }
-  .stat-sub { @apply text-[12px] text-app-text3 mt-1; }
+  .stat-card { @apply bg-app-surface border border-app-border rounded-[10px] px-4 py-4 md:px-5 md:py-[18px]; }
+  .stat-label { @apply text-[11px] md:text-[12px] font-medium text-app-text3 mb-1 md:mb-1.5 flex items-center gap-1.5; }
+  .stat-value { @apply text-[22px] md:text-[26px] font-bold text-app-text leading-none; }
+  .stat-sub { @apply text-[11px] md:text-[12px] text-app-text3 mt-1; }
 
   /* Danger zone */
   .danger-zone {
@@ -114,7 +114,7 @@
   }
 
   /* Score rows */
-  .score-row { @apply flex items-center gap-3 px-4 py-2.5 border-b border-app-border last:border-b-0; }
+  .score-row { @apply flex items-center gap-2.5 px-3 py-2.5 md:px-4 border-b border-app-border last:border-b-0; }
 
   /* Sess control */
   .sess-control {

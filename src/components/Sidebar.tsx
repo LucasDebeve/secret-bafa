@@ -24,19 +24,35 @@ const NAV = [
 type Props = {
   view: View;
   onNavigate: (v: View) => void;
+  isOpen: boolean;
+  onClose: () => void;
 };
 
-export default function Sidebar({ view, onNavigate }: Props) {
+export default function Sidebar({ view, onNavigate, isOpen, onClose }: Props) {
   const { me, fid, logout } = useAuth();
   const { formationName } = useData();
 
   if (!me || !fid) return null;
 
+  const handleNav = (v: View) => {
+    onNavigate(v);
+    onClose();
+  };
+
   return (
-    <aside className="w-[220px] bg-app-surface border-r border-app-border flex flex-col fixed top-0 left-0 h-screen z-[100] flex-shrink-0">
+    <aside className={`w-[220px] bg-app-surface border-r border-app-border flex flex-col fixed top-0 left-0 h-screen z-[100] flex-shrink-0 transition-transform duration-200 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
       <div className="px-4 py-5 flex items-center gap-2.5 border-b border-app-border">
         <div className="w-8 h-8 bg-accent rounded-[7px] flex items-center justify-center text-white font-bold text-[13px] flex-shrink-0">SB</div>
-        <div className="text-[15px] font-bold">Secret BAFA</div>
+        <div className="text-[15px] font-bold flex-1">Secret BAFA</div>
+        <button
+          className="md:hidden w-7 h-7 flex items-center justify-center rounded-md text-app-text3 hover:bg-app-bg"
+          onClick={onClose}
+          aria-label="Fermer le menu"
+        >
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
       <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
         <div className="text-[11px] font-semibold text-app-text3 tracking-wider px-2 mb-1.5 uppercase">Jeu</div>
@@ -44,7 +60,7 @@ export default function Sidebar({ view, onNavigate }: Props) {
           <button
             key={n.key}
             className={`nav-item ${view === n.key ? "on" : ""}`}
-            onClick={() => onNavigate(n.key as View)}
+            onClick={() => handleNav(n.key as View)}
           >
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="flex-shrink-0">
               {n.icon}
@@ -55,7 +71,7 @@ export default function Sidebar({ view, onNavigate }: Props) {
         {me.isAdmin && (
           <>
             <div className="text-[11px] font-semibold text-app-text3 tracking-wider px-2 mb-1.5 mt-3.5 uppercase">Animateur</div>
-            <button className={`nav-item ${view === "admin" ? "on" : ""}`} onClick={() => onNavigate("admin")}>
+            <button className={`nav-item ${view === "admin" ? "on" : ""}`} onClick={() => handleNav("admin")}>
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="flex-shrink-0">
                 <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <circle cx="12" cy="12" r="3" />

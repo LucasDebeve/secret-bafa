@@ -24,7 +24,7 @@ export type Vote = {
   sid: string;
   secretUid: string;
   guess: string;
-  correct: boolean;
+  correct?: boolean;
   validated: boolean;
   pointsGiven: boolean;
   adminValidated?: boolean;
