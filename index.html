@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secret BAFA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f4f5;
+  --surface: #ffffff;
+  --border: #e4e4e7;
+  --border2: #d1d1d6;
+  --text: #18181b;
+  --text2: #52525b;
+  --text3: #a1a1aa;
+  --accent: #0ea5e9;
+  --accent-bg: #f0f9ff;
+  --accent-border: #bae6fd;
+  --green: #10b981;
+  --green-bg: #f0fdf4;
+  --green-border: #bbf7d0;
+  --red: #ef4444;
+  --red-bg: #fef2f2;
+  --red-border: #fecaca;
+  --amber: #f59e0b;
+  --amber-bg: #fffbeb;
+  --amber-border: #fde68a;
+  --purple: #8b5cf6;
+  --purple-bg: #f5f3ff;
+  --purple-border: #ddd6fe;
+  --sidebar-w: 220px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: Inter, sans-serif; font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+/* ── LOADING ── */
+#page-loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); }
+#page-loading .inner { text-align: center; }
+.spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.load-txt { font-size: 13px; color: var(--text3); font-weight: 500; }
+
+/* ── AUTH ── */
+#page-auth { display: none; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); padding: 2rem; }
+#page-auth.active { display: flex; }
+.auth-box { width: 100%; max-width: 400px; }
+.auth-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; }
+.auth-logo-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; }
+.auth-logo-name { font-size: 16px; font-weight: 700; color: var(--text); }
+.auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; }
+.auth-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.auth-sub { font-size: 13px; color: var(--text3); margin-bottom: 1.5rem; }
+.tabs { display: flex; background: var(--bg); border-radius: 8px; padding: 3px; margin-bottom: 1.5rem; gap: 3px; }
+.tab { flex: 1; background: none; border: none; color: var(--text3); padding: .45rem; border-radius: 6px; cursor: pointer; font-family: Inter, sans-serif; font-size: 13px; font-weight: 500; transition: all .15s; }
+.tab.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 5px; margin-top: 14px; }
+input, textarea, select { width: 100%; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); padding: 9px 12px; font-family: Inter, sans-serif; font-size: 13px; outline: none; transition: border-color .15s, box-shadow .15s; -webkit-appearance: none; }
+input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,165,233,.1); }
+select { cursor: pointer; }
+textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 16px; cursor: pointer; font-family: Inter, sans-serif; font-weight: 600; font-size: 13px; transition: opacity .15s, transform .1s; white-space: nowrap; }
+.btn:hover { opacity: .88; }
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.full { width: 100%; margin-top: 1rem; }
+.btn.ghost { background: none; border: 1px solid var(--border2); color: var(--text2); }
+.btn.ghost:hover { border-color: var(--border); background: var(--bg); }
+.btn.danger { background: none; border: 1px solid var(--red-border); color: var(--red); }
+.btn.danger:hover { background: var(--red-bg); }
+.btn.green { background: var(--green); }
+.btn.amber { background: var(--amber); }
+.btn.sm { padding: 6px 12px; font-size: 12px; }
+.err { font-size: 12px; color: var(--red); margin-top: 6px; }
+
+/* ── APP SHELL ── */
+#page-app { display: none; min-height: 100vh; }
+#page-app.active { display: flex; }
+
+/* ── SIDEBAR ── */
+.sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; flex-shrink: 0; }
+.sidebar-logo { padding: 20px 18px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+.sidebar-logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+.sidebar-logo-name { font-size: 15px; font-weight: 700; }
+.sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+.nav-section { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: .06em; padding: 0 8px; margin-bottom: 6px; margin-top: 14px; text-transform: uppercase; }
+.nav-section:first-child { margin-top: 0; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); transition: all .15s; border: none; background: none; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item.on { background: var(--accent-bg); color: var(--accent); }
+.nav-item svg { flex-shrink: 0; }
+.sidebar-user { padding: 14px 16px; border-top: 1px solid var(--border); }
+.sidebar-user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.user-av { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+.user-name { font-size: 13px; font-weight: 600; }
+.user-role { font-size: 11px; color: var(--text3); }
+
+/* ── MAIN ── */
+.main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; }
+.topbar { height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 28px; gap: 16px; position: sticky; top: 0; z-index: 50; }
+.topbar-title { font-size: 16px; font-weight: 700; }
+.topbar-sub { font-size: 13px; color: var(--text3); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.content { padding: 28px; }
+
+/* ── CARDS ── */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+.stat-label { font-size: 12px; font-weight: 500; color: var(--text3); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.stat-label svg { color: var(--accent); }
+.stat-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+.stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 20px; }
+.card-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.card-title { font-size: 14px; font-weight: 600; }
+.card-body { padding: 20px; }
+.card-body.tight { padding: 0; }
+
+/* ── STATUS BADGE ── */
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge.green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+.badge.red { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+.badge.amber { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+.badge.blue { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); }
+.badge.purple { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+.badge.gray { background: var(--bg); color: var(--text3); border: 1px solid var(--border); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.dot.pulse { animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+/* ── SESSION BANNER ── */
+.sess-banner { border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 500; }
+.sess-banner.open { background: var(--green-bg); border: 1px solid var(--green-border); color: #065f46; }
+.sess-banner.closed { background: var(--amber-bg); border: 1px solid var(--amber-border); color: #92400e; }
+.sess-banner.wait { background: var(--bg); border: 1px solid var(--border); color: var(--text3); }
+
+/* ── SECRET CARDS ── */
+.secret-list { display: flex; flex-direction: column; gap: 12px; }
+.secret-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; transition: border-color .15s; }
+.secret-card:hover { border-color: var(--border2); }
+.secret-card.mine { border-left: 3px solid var(--accent); }
+.secret-card.found { border-left: 3px solid var(--green); }
+.secret-card.voted { border-left: 3px solid var(--purple); }
+.secret-text { font-size: 14px; line-height: 1.6; color: var(--text); margin-bottom: 12px; font-style: italic; }
+.secret-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.secret-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.secret-id { font-size: 11px; color: var(--text3); font-weight: 500; font-family: monospace; }
+.vote-area { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vote-select { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vote-select select { width: auto; padding: 7px 10px; font-size: 12px; border-radius: 7px; }
+.found-banner { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--green-bg); border: 1px solid var(--green-border); border-radius: 8px; margin-bottom: 10px; font-size: 12px; color: #065f46; flex-wrap: wrap; }
+.found-author { font-weight: 700; }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: .04em; border-bottom: 1px solid var(--border); text-transform: uppercase; white-space: nowrap; }
+td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg); }
+.td-secret { max-width: 200px; font-style: italic; color: var(--text2); }
+.td-author { font-weight: 600; color: var(--accent); font-size: 12px; }
+
+/* ── DEFI CARD ── */
+.defi-highlight { background: linear-gradient(135deg, var(--purple-bg), var(--accent-bg)); border: 1px solid var(--purple-border); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+.defi-icon { font-size: 24px; margin-bottom: 8px; }
+.defi-title { font-size: 13px; font-weight: 700; color: var(--purple); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
+.defi-text { font-size: 14px; color: var(--text); line-height: 1.6; }
+.defi-text strong { color: var(--purple); }
+
+/* ── SCORE TABLE ── */
+.score-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.score-row:last-child { border-bottom: none; }
+.score-rank { width: 28px; text-align: center; font-weight: 700; font-size: 14px; color: var(--text3); }
+.score-rank.r1 { color: #f59e0b; }
+.score-rank.r2 { color: #6b7280; }
+.score-rank.r3 { color: #b45309; }
+.score-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: #fff; flex-shrink: 0; }
+.score-info { flex: 1; }
+.score-name { font-weight: 600; font-size: 13px; }
+.score-detail { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.score-pts { font-weight: 700; font-size: 15px; color: var(--accent); }
+
+/* ── SESSION CONTROL ── */
+.sess-control { display: flex; align-items: center; gap: 10px; padding: 14px 20px; background: var(--bg); border-radius: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.sess-status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.sess-status-dot.open { background: var(--green); box-shadow: 0 0 0 3px rgba(16,185,129,.15); }
+.sess-status-dot.closed { background: var(--red); }
+.sess-label { font-weight: 600; font-size: 13px; flex: 1; }
+.sess-info { font-size: 12px; color: var(--text3); }
+
+/* ── FORM SECTION ── */
+.form-section { margin-bottom: 20px; }
+.section-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+.char-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+.char-n { font-size: 11px; color: var(--text3); }
+
+/* ── DANGER ZONE ── */
+.danger-zone { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.danger-info { font-size: 12px; color: #991b1b; }
+.danger-info strong { font-weight: 600; }
+
+/* ── EINP ── */
+.einp { background: var(--bg); border: 1px solid var(--border2); border-radius: 6px; color: var(--text); padding: 6px 10px; font-family: Inter, sans-serif; font-size: 13px; width: 100%; outline: none; }
+.einp:focus { border-color: var(--accent); }
+
+/* ── FILTERS ── */
+.filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.filt { background: var(--surface); border: 1px solid var(--border); color: var(--text2); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-family: Inter, sans-serif; font-size: 12px; font-weight: 500; transition: all .15s; }
+.filt:hover { border-color: var(--accent); color: var(--accent); }
+.filt.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── KRAPPO SESSION ── */
+.krappo-banner { background: linear-gradient(135deg, var(--accent-bg), #f0f9ff); border: 1px solid var(--accent-border); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; }
+.krappo-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+.krappo-info { flex: 1; }
+.krappo-title { font-weight: 600; font-size: 13px; }
+.krappo-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 16px; border-radius: 10px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 500; z-index: 9999; opacity: 0; transform: translateY(8px); transition: all .2s; pointer-events: none; max-width: 300px; background: var(--text); color: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.ok { background: var(--green); }
+.toast.er { background: var(--red); }
+.toast.nf { background: var(--purple); }
+
+/* ── EMPTY ── */
+.empty-state { text-align: center; padding: 48px 24px; color: var(--text3); }
+.empty-icon { font-size: 32px; margin-bottom: 10px; opacity: .5; }
+.empty-text { font-size: 13px; line-height: 1.8; }
+
+/* ── MOBILE ── */
+@media(max-width:768px) {
+  .sidebar { transform: translateX(-100%); }
+  .main { margin-left: 0; }
+  .stat-grid { grid-template-columns: repeat(2,1fr); }
+  .content { padding: 16px; }
+  .topbar { padding: 0 16px; }
+}
+@media(max-width:480px) {
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .row2 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="page-loading">
+  <div class="inner">
+    <div class="spinner"></div>
+    <div class="load-txt">Connexion en cours...</div>
+  </div>
+</div>
+
+<!-- AUTH -->
+<div id="page-auth">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">SB</div>
+      <div class="auth-logo-name">Secret BAFA</div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-title">Connexion</div>
+      <div class="auth-sub">Entre tes identifiants pour acces au jeu</div>
+      <label>IDENTIFIANT</label>
+      <input type="text" id="li" placeholder="Prenom.Initiale" autocomplete="off">
+      <label>MOT DE PASSE</label>
+      <input type="password" id="lp" placeholder="••••••••">
+      <div id="le" class="err"></div>
+      <button class="btn full" id="btn-login" onclick="doLogin()">Se connecter</button>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)">
+        Ton compte est cree par l'animateur. Contacte-le si tu n'as pas tes identifiants.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="page-app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">SB</div>
+      <div class="sidebar-logo-name">Secret BAFA</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Jeu</div>
+      <button class="nav-item" onclick="goTo('home')" id="nav-home">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Tableau de bord
+      </button>
+      <button class="nav-item" onclick="goTo('secrets')" id="nav-secrets">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        Les secrets
+      </button>
+      <button class="nav-item" onclick="goTo('revelations')" id="nav-revelations">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Revelations
+      </button>
+      <button class="nav-item" onclick="goTo('classement')" id="nav-classement">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Classement
+      </button>
+      <button class="nav-item" id="nav-defi" onclick="goTo('defi')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Mon defi
+      </button>
+      <div class="nav-section" id="nav-admin-section" style="display:none">Animateur</div>
+      <button class="nav-item" onclick="goTo('admin')" id="nav-admin" style="display:none">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+        Panel animateur
+      </button>
+    </nav>
+    <div class="sidebar-user">
+      <div class="sidebar-user-info">
+        <div class="user-av" id="user-av"></div>
+        <div>
+          <div class="user-name" id="user-name"></div>
+          <div class="user-role" id="user-role">Participant</div>
+        </div>
+      </div>
+      <button class="btn ghost sm" style="width:100%" onclick="doLogout()">Se deconnecter</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Tableau de bord</div>
+        <div class="topbar-sub" id="topbar-sub">Bienvenue dans Secret BAFA</div>
+      </div>
+      <div class="topbar-right" id="sess-badge-wrap"></div>
+    </div>
+    <div class="content">
+
+      <!-- HOME -->
+      <div id="v-home" style="display:none">
+        <!-- Krappo integration banner -->
+        <div class="krappo-banner" id="krappo-banner">
+          <div class="krappo-icon">K</div>
+          <div class="krappo-info">
+            <div class="krappo-title">Session Krappo</div>
+            <div class="krappo-sub" id="krappo-sub">En attente de liaison avec une session Krappo...</div>
+          </div>
+          <span class="badge gray" id="krappo-status">Non lie</span>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              Secrets deposes
+            </div>
+            <div class="stat-value" id="home-s">0</div>
+            <div class="stat-sub">sur <span id="home-total-s">0</span> participants</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Secrets trouves
+            </div>
+            <div class="stat-value" id="home-found">0</div>
+            <div class="stat-sub">decouverts jusqu'ici</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              Mes points
+            </div>
+            <div class="stat-value" id="home-pts">0</div>
+            <div class="stat-sub">classement : <span id="home-rank">—</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Statut des votes
+            </div>
+            <div class="stat-value" id="home-votes-status" style="font-size:16px">—</div>
+            <div class="stat-sub" id="home-votes-sub">—</div>
+          </div>
+        </div>
+
+        <!-- Mon defi en bref -->
+        <div class="card" id="home-defi-card">
+          <div class="card-head"><div class="card-title">Mon defi secret</div></div>
+          <div class="card-body" id="home-defi-body"></div>
+        </div>
+
+        <!-- Mon secret -->
+        <div class="card">
+          <div class="card-head"><div class="card-title">Mon secret</div></div>
+          <div class="card-body" id="home-secret-body"></div>
+        </div>
+      </div>
+
+      <!-- SECRETS -->
+      <div id="v-secrets" style="display:none">
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-head"><div class="card-title">Deposer mon secret</div></div>
+          <div class="card-body">
+            <textarea id="si" placeholder="Ce que tu n'as jamais ose dire..." maxlength="300" oninput="document.getElementById('scnt').textContent=this.value.length"></textarea>
+            <div class="char-row">
+              <div id="serr" class="err"></div>
+              <div class="char-n"><span id="scnt">0</span>/300</div>
+            </div>
+            <button class="btn" id="btn-sec" onclick="submitSecret()" style="margin-top:12px">Confier mon secret</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Les secrets <span class="badge gray" id="scount">0</span></div>
+          </div>
+          <div class="card-body">
+            <div id="vbanner" style="margin-bottom:16px"></div>
+            <div id="slist" class="secret-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REVELATIONS -->
+      <div id="v-revelations" style="display:none">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Revelations <span class="badge gray" id="rev-count">0/0</span></div>
+          </div>
+          <div class="card-body">
+            <div class="filters">
+              <button class="filt on" onclick="setRevFilter('all')">Tous</button>
+              <button class="filt" onclick="setRevFilter('found')">Trouves</button>
+              <button class="filt" onclick="setRevFilter('notfound')">Pas encore trouves</button>
+            </div>
+            <div id="rev-list" class="secret-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLASSEMENT -->
+      <div id="v-classement" style="display:none">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Classement general</div>
+            <div style="font-size:12px;color:var(--text3)">+3 pts si secret trouve (valide) · +1 pt defense si quelqu'un se trompe sur ton secret</div>
+          </div>
+          <div class="card-body tight">
+            <div id="rlist"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEFI -->
+      <div id="v-defi" style="display:none">
+        <div id="defi-container"></div>
+      </div>
+
+      <!-- ADMIN -->
+      <div id="v-admin" style="display:none">
+        <div class="stat-grid" style="margin-bottom:20px">
+          <div class="stat-card"><div class="stat-label">Secrets</div><div class="stat-value" id="as1">0</div></div>
+          <div class="stat-card"><div class="stat-label">Joueurs</div><div class="stat-value" id="as2">0</div></div>
+          <div class="stat-card"><div class="stat-label">Votes</div><div class="stat-value" id="as3">0</div></div>
+          <div class="stat-card"><div class="stat-label">Points attribues</div><div class="stat-value" id="as4">0</div></div>
+        </div>
+
+        <!-- Krappo integration -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-head"><div class="card-title">Liaison Krappo</div></div>
+          <div class="card-body">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Lie cette partie a une session Krappo pour importer automatiquement les participants.</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <input type="text" id="krappo-session-id" placeholder="ID de session Krappo" style="flex:1;min-width:180px">
+              <button class="btn" onclick="linkKrappo()">Lier la session</button>
+            </div>
+            <div id="krappo-linked-info" style="margin-top:10px;font-size:12px;color:var(--text3)"></div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+              <div style="font-size:12px;font-weight:600;margin-bottom:10px">Creer des comptes manuellement</div>
+              <div class="row2" style="margin-bottom:10px">
+                <div><label>PRENOM</label><input type="text" id="np" placeholder="Adrien"></div>
+                <div><label>NOM</label><input type="text" id="nn" placeholder="Martin"></div>
+              </div>
+              <label>MOT DE PASSE</label>
+              <input type="password" id="npw" placeholder="min 4 caracteres" style="margin-bottom:10px">
+              <div id="np-prev" style="font-size:12px;color:var(--text3);margin-bottom:8px"></div>
+              <div id="np-err" class="err" style="margin-bottom:8px"></div>
+              <button class="btn sm" onclick="adminCreateUser()">Creer le compte</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Session control -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-head"><div class="card-title">Controle des votes</div></div>
+          <div class="card-body">
+            <div class="sess-control">
+              <div class="sess-status-dot closed" id="sdot"></div>
+              <div class="flex-1">
+                <div class="sess-label" id="slbl">Votes fermes</div>
+                <div class="sess-info" id="sinfo">Ouvre une session pour commencer.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn green sm" onclick="openVotes()">Ouvrir les votes</button>
+              <button class="btn danger sm" onclick="closeVotes()">Fermer les votes</button>
+              <button class="btn ghost sm" onclick="resetVotes()">Reinitialiser les votes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zones dangereuses -->
+        <div class="danger-zone"><div class="danger-info"><strong>Points</strong> — Remise a zero en fin de sejour</div><button class="btn danger sm" onclick="resetPoints()">Remettre a zero</button></div>
+        <div class="danger-zone"><div class="danger-info"><strong>Fin de jeu</strong> — Supprime tout</div><button class="btn danger sm" onclick="resetEverything()">Tout supprimer</button></div>
+
+        <!-- Tabs -->
+        <div class="filters" style="margin-bottom:16px">
+          <button class="filt on" onclick="aTab('s')">Secrets</button>
+          <button class="filt" onclick="aTab('v')">Valider votes</button>
+          <button class="filt" onclick="aTab('d')">Defis</button>
+          <button class="filt" onclick="aTab('u')">Joueurs</button>
+        </div>
+
+        <!-- SECRETS TAB -->
+        <div id="at-s" class="card">
+          <div class="card-head"><div class="card-title">Tous les secrets</div></div>
+          <div class="card-body tight table-wrap">
+            <table><thead><tr><th>Auteur</th><th>Secret</th><th>Votes</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody id="asb"></tbody></table>
+          </div>
+        </div>
+
+        <!-- VOTES TAB -->
+        <div id="at-v" class="card" style="display:none">
+          <div class="card-head">
+            <div class="card-title">Valider les propositions</div>
+            <span class="badge blue">+3 pts si correct · +1 pt defense automatique</span>
+          </div>
+          <div class="card-body tight table-wrap">
+            <table><thead><tr><th>Votant</th><th>Secret</th><th>A devine</th><th>Vrai auteur</th><th>Statut</th><th>Action</th></tr></thead>
+            <tbody id="avb"></tbody></table>
+          </div>
+        </div>
+
+        <!-- DEFIS TAB -->
+        <div id="at-d" class="card" style="display:none">
+          <div class="card-head"><div class="card-title">Gerer les defis</div></div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+              <div><label>DONNER LE DEFI A</label><select id="d-to"></select></div>
+              <div><label>DOIT FAIRE VOTER</label><select id="d-voter"></select></div>
+              <div><label>SUR CE SECRET</label><select id="d-secret"></select></div>
+              <div><label>POUR CET AUTEUR</label><select id="d-target"></select></div>
+            </div>
+            <div id="d-err" class="err" style="margin-bottom:8px"></div>
+            <button class="btn sm" onclick="createDefi()">Creer le defi</button>
+          </div>
+          <div class="card-body tight table-wrap" style="border-top:1px solid var(--border)">
+            <table><thead><tr><th>Assigne a</th><th>Faire voter</th><th>Secret</th><th>Pour</th><th>Statut</th><th>Action</th></tr></thead>
+            <tbody id="db"></tbody></table>
+          </div>
+        </div>
+
+        <!-- JOUEURS TAB -->
+        <div id="at-u" class="card" style="display:none">
+          <div class="card-head"><div class="card-title">Joueurs</div></div>
+          <div class="card-body tight table-wrap">
+            <table><thead><tr><th>Identifiant</th><th>Prenom</th><th>Nom</th><th>Points</th><th>Action</th></tr></thead>
+            <tbody id="ub"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /page-app -->
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc,
+  updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, where, increment
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const cfg = {
+  apiKey: "AIzaSyDEP5bGDSeM9yFtsiTndP4u5cchfIgoazg",
+  authDomain: "secret-bafa-new2.firebaseapp.com",
+  projectId: "secret-bafa-new2",
+  storageBucket: "secret-bafa-new2.firebasestorage.app",
+  messagingSenderId: "950509113898",
+  appId: "1:950509113898:web:24ffd605a66353bc8ca953"
+};
+const app = initializeApp(cfg);
+const db  = getFirestore(app);
+const C   = { U:"users", S:"secrets", V:"votes", P:"points", SE:"session", D:"defis" };
+
+let me = JSON.parse(sessionStorage.getItem("sb_me") || "null");
+let cS=[], cV=[], cSess={open:false}, cP={}, cD=[], cU=[];
+let curV="home", curAT="s", revF="all";
+
+const COLORS = ["#0ea5e9","#8b5cf6","#10b981","#f59e0b","#ef4444","#ec4899","#14b8a6","#f97316"];
+function av(id){ let h=0; for(const c of id) h=(h*31+c.charCodeAt(0))%COLORS.length; return COLORS[h]; }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+window.toast = (msg,type) => {
+  const el=document.getElementById("toast");
+  el.textContent=msg; el.className="toast "+(type||""); el.classList.add("show");
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("show"),3800);
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function init() {
+  const t = setTimeout(() => showPage("page-auth"), 6000);
+  try {
+    const ref  = doc(db, C.U, "admin");
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, { id:"admin", pw:"admin2024", isAdmin:true, prenom:"Admin", nom:"BAFA" });
+    }
+    clearTimeout(t);
+    me ? boot() : showPage("page-auth");
+  } catch(e) {
+    clearTimeout(t);
+    console.error(e);
+    showPage("page-auth");
+  }
+}
+
+function showPage(id) {
+  ["page-loading","page-auth","page-app"].forEach(p => {
+    const el=document.getElementById(p);
+    if(el){ el.style.display="none"; el.classList.remove("active"); }
+  });
+  const target=document.getElementById(id);
+  if(target){ target.style.display=""; target.classList.add("active"); }
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+window.doLogin = async () => {
+  const id  = document.getElementById("li").value.trim();
+  const pw  = document.getElementById("lp").value;
+  const err = document.getElementById("le");
+  const btn = document.getElementById("btn-login");
+  err.textContent="";
+  if(!id||!pw){ err.textContent="Remplis tous les champs."; return; }
+  btn.disabled=true; btn.textContent="Connexion...";
+  try {
+    const snap = await getDocs(collection(db,C.U));
+    const user = snap.docs.map(d=>d.data()).find(u=>u.id.toLowerCase()===id.toLowerCase()&&u.pw===pw);
+    if(!user){ err.textContent="Identifiant ou mot de passe incorrect."; return; }
+    me=user; sessionStorage.setItem("sb_me",JSON.stringify(me)); boot();
+  } catch(e){ err.textContent="Erreur. Verifie les regles Firestore."; console.error(e); }
+  finally{ btn.disabled=false; btn.textContent="Se connecter"; }
+};
+
+window.doLogout = () => {
+  me=null; sessionStorage.removeItem("sb_me"); showPage("page-auth");
+};
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+function boot() {
+  const displayId = me.prenom ? me.prenom+"."+(me.nom?me.nom[0].toUpperCase():"") : me.id;
+  document.getElementById("user-av").textContent  = (me.prenom||me.id)[0].toUpperCase();
+  document.getElementById("user-av").style.background = av(me.id);
+  document.getElementById("user-name").textContent = displayId;
+  document.getElementById("user-role").textContent = me.isAdmin ? "Animateur" : "Participant";
+  document.getElementById("nav-admin").style.display         = me.isAdmin ? "" : "none";
+  document.getElementById("nav-admin-section").style.display = me.isAdmin ? "" : "none";
+  document.getElementById("nav-defi").style.display          = me.isAdmin ? "none" : "";
+  showPage("page-app");
+
+  // Listeners permanents
+  onSnapshot(doc(db,C.SE,"current"), snap => {
+    cSess = snap.exists() ? snap.data() : {open:false};
+    renderSessionBadge();
+    if(curV==="secrets")  renderSecrets();
+    if(curV==="home")     renderHome();
+    if(curV==="admin")    renderAdmin();
+  });
+  onSnapshot(collection(db,C.P), snap => {
+    cP={}; snap.docs.forEach(d=>{ cP[d.id]=d.data(); });
+    if(curV==="classement") renderClassement();
+    if(curV==="home")       renderHome();
+    if(curV==="admin")      renderAdmin();
+  });
+  onSnapshot(collection(db,C.D), snap => {
+    cD=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(curV==="defi")  renderDefi();
+    if(curV==="home")  renderHome();
+    if(curV==="admin"&&curAT==="d") renderAdminDefis();
+  });
+  onSnapshot(query(collection(db,C.S),orderBy("createdAt","desc")), snap => {
+    cS=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(curV==="secrets")     renderSecrets();
+    if(curV==="revelations") renderRevelations();
+    if(curV==="home")        renderHome();
+    if(curV==="admin")       renderAdmin();
+  });
+  onSnapshot(collection(db,C.V), snap => {
+    cV=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(curV==="secrets")    renderSecrets();
+    if(curV==="classement") renderClassement();
+    if(curV==="home")       renderHome();
+    if(curV==="admin")      renderAdmin();
+  });
+  onSnapshot(collection(db,C.U), snap => {
+    cU=snap.docs.map(d=>d.data()).filter(u=>!u.isAdmin);
+    if(curV==="admin"&&curAT==="u") renderAdminUsers();
+  });
+
+  goTo("home");
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+const VIEWS = ["home","secrets","revelations","classement","defi","admin"];
+window.goTo = v => {
+  curV=v;
+  VIEWS.forEach(x => {
+    const el=document.getElementById("v-"+x);
+    if(el) el.style.display=x===v?"":"none";
+    const nb=document.getElementById("nav-"+x);
+    if(nb) nb.classList.toggle("on",x===v);
+  });
+  const titles = { home:"Tableau de bord", secrets:"Les secrets", revelations:"Revelations", classement:"Classement", defi:"Mon defi", admin:"Panel animateur" };
+  document.getElementById("topbar-title").textContent = titles[v]||v;
+  if(v==="secrets")    renderSecrets();
+  if(v==="revelations") renderRevelations();
+  if(v==="classement") renderClassement();
+  if(v==="defi")       renderDefi();
+  if(v==="admin")      renderAdmin();
+  if(v==="home")       renderHome();
+};
+
+function renderSessionBadge() {
+  const wrap=document.getElementById("sess-badge-wrap");
+  if(cSess.open){
+    wrap.innerHTML="<span class='badge green'><span class='dot pulse'></span>Votes ouverts</span>";
+  } else {
+    wrap.innerHTML="<span class='badge gray'>Votes fermes</span>";
+  }
+}
+
+// ── HOME ──────────────────────────────────────────────────────────────────────
+function renderHome() {
+  document.getElementById("home-s").textContent     = cS.length;
+  document.getElementById("home-total-s").textContent = cU.length||"?";
+  document.getElementById("home-found").textContent  = cS.filter(s=>s.found).length;
+
+  const myPts = cP[me.id]?.total||0;
+  document.getElementById("home-pts").textContent = myPts;
+  // Rang
+  const ranked = Object.entries(cP).filter(([id])=>id!=="admin").sort((a,b)=>b[1].total-a[1].total);
+  const rank   = ranked.findIndex(([id])=>id===me.id);
+  document.getElementById("home-rank").textContent = rank>=0 ? "#"+(rank+1) : "—";
+
+  // Votes status
+  const vs  = document.getElementById("home-votes-status");
+  const vsb = document.getElementById("home-votes-sub");
+  if(cSess.open){
+    const myVote = cV.find(v=>v.voter===me.id&&v.sessId===cSess.sessId);
+    vs.textContent  = myVote ? "Vote depose" : "Ouvert";
+    vsb.textContent = myVote ? "Rendez-vous a la revelation !" : "Tu peux voter maintenant";
+  } else {
+    vs.textContent  = "Ferme";
+    vsb.textContent = "L'animateur ouvrira les votes bientot";
+  }
+
+  // Mon defi
+  const myDefi = cD.find(d=>d.assignedTo===me.id&&d.status==="pending");
+  const defiBody=document.getElementById("home-defi-body");
+  if(myDefi){
+    const s=cS.find(x=>x.id===myDefi.secretId);
+    const snippet=s?'"'+s.text.slice(0,60)+(s.text.length>60?"...":"")+"\"":"(secret inconnu)";
+    defiBody.innerHTML="<div class='defi-highlight'>"
+      +"<div class='defi-title'>Mission active</div>"
+      +"<div class='defi-text'>Fais en sorte que <strong>"+esc(myDefi.targetVoter)+"</strong> vote pour <strong>"+esc(myDefi.targetAuthor)+"</strong> sur le secret : <em style='color:var(--text2)'>"+esc(snippet)+"</em></div>"
+      +"<div style='margin-top:10px'><span class='badge purple'>+3 pts si reussi</span></div>"
+    +"</div>";
+  } else {
+    defiBody.innerHTML="<div class='empty-state'><div class='empty-icon'>&#127919;</div><div class='empty-text'>Aucun defi actif pour l'instant.</div></div>";
+  }
+
+  // Mon secret
+  const mySecret=cS.find(s=>s.uid===me.id);
+  const sb=document.getElementById("home-secret-body");
+  if(mySecret){
+    const vcnt=cV.filter(v=>v.sid===mySecret.id).length;
+    sb.innerHTML="<div class='secret-card mine' style='box-shadow:none;border:none;padding:0'>"
+      +"<div class='secret-text'>"+esc(mySecret.text)+"</div>"
+      +"<div class='secret-meta'>"
+        +"<span class='badge blue'>"+vcnt+" vote"+(vcnt>1?"s":"")+"</span>"
+        +(mySecret.found?"<span class='badge red'>Secret trouve !</span>":"<span class='badge green'>Encore mystere</span>")
+      +"</div>"
+    +"</div>";
+  } else {
+    sb.innerHTML="<div class='empty-state' style='padding:16px'>"
+      +"<div class='empty-text'>Tu n'as pas encore depose de secret.<br><button class='btn sm' onclick=\"goTo('secrets')\" style='margin-top:8px'>Deposer mon secret</button></div>"
+    +"</div>";
+  }
+
+  // Krappo banner
+  const kSess = cSess.krappoSession;
+  if(kSess){
+    document.getElementById("krappo-sub").textContent   = "Session liee : "+kSess;
+    document.getElementById("krappo-status").textContent = "Lie";
+    document.getElementById("krappo-status").className  = "badge green";
+  }
+}
+
+// ── SECRETS ───────────────────────────────────────────────────────────────────
+window.submitSecret = async () => {
+  const text=document.getElementById("si").value.trim();
+  const err =document.getElementById("serr");
+  const btn =document.getElementById("btn-sec");
+  err.textContent="";
+  if(!text){ err.textContent="Ecris quelque chose."; return; }
+  if(text.length<5){ err.textContent="Secret trop court."; return; }
+  if(cS.find(s=>s.uid===me.id)){ err.textContent="Tu as deja un secret."; return; }
+  btn.disabled=true; btn.textContent="Envoi...";
+  try {
+    await addDoc(collection(db,C.S),{uid:me.id,text,createdAt:serverTimestamp()});
+    document.getElementById("si").value=""; document.getElementById("scnt").textContent="0";
+    toast("Secret confie !","ok");
+  } catch(e){ err.textContent="Erreur."; console.error(e); }
+  finally{ btn.disabled=false; btn.textContent="Confier mon secret"; }
+};
+
+window.submitVote = async (sid, guessed) => {
+  if(!cSess.open){ toast("Votes fermes.","er"); return; }
+  if(!guessed){ toast("Choisis un auteur !","er"); return; }
+  const s=cS.find(x=>x.id===sid);
+  if(!s||s.uid===me.id){ toast("Pas ton propre secret !","er"); return; }
+  if(cV.find(v=>v.voter===me.id&&v.sessId===cSess.sessId)){ toast("Tu as deja vote !","er"); return; }
+  const correct=guessed===s.uid;
+  try {
+    await addDoc(collection(db,C.V),{
+      voter:me.id, sid, secretUid:s.uid, guess:guessed,
+      correct, validated:false, pointsGiven:false,
+      sessId:cSess.sessId, ts:serverTimestamp()
+    });
+    // +1 pt defense automatique si vote incorrect
+    if(!correct){
+      const pRef=doc(db,C.P,s.uid);
+      const pSnap=await getDoc(pRef);
+      if(pSnap.exists()){
+        await updateDoc(pRef,{total:increment(1),history:[...(pSnap.data().history||[]),{type:"defense",pts:1,ts:Date.now()}]});
+      } else {
+        await setDoc(pRef,{total:1,history:[{type:"defense",pts:1,ts:Date.now()}]});
+      }
+    }
+    // Verifier defis
+    cD.filter(d=>d.status==="pending"&&d.targetVoter===me.id&&d.secretId===sid&&d.targetAuthor===guessed)
+      .forEach(d=>resolveDefiAuto(d));
+    toast("Vote enregistre !","nf");
+  } catch(e){ toast("Erreur.","er"); console.error(e); }
+};
+
+function renderSecrets() {
+  document.getElementById("scount").textContent=cS.length;
+  const myVote=cSess.sessId?cV.find(v=>v.voter===me.id&&v.sessId===cSess.sessId):null;
+  const banner=document.getElementById("vbanner");
+  if(cSess.open){
+    banner.innerHTML=myVote
+      ?"<div class='sess-banner closed'>Vote envoye ! Rendez-vous a la revelation.</div>"
+      :"<div class='sess-banner open'><strong>Votes ouverts !</strong> &nbsp;Un seul vote par session — choisis bien.</div>";
+  } else {
+    banner.innerHTML="<div class='sess-banner wait'>Pas de session ouverte. L'animateur ouvrira les votes bientot.</div>";
+  }
+  const vcnt={};cV.forEach(v=>{vcnt[v.sid]=(vcnt[v.sid]||0)+1;});
+  const foundUids=new Set(cS.filter(s=>s.found).map(s=>s.uid));
+  const others=[...new Set(cS.map(s=>s.uid))].filter(u=>u!==me.id&&!foundUids.has(u));
+  const container=document.getElementById("slist");
+  if(!cS.length){
+    container.innerHTML="<div class='empty-state'><div class='empty-icon'>&#129296;</div><div class='empty-text'>Aucun secret pour l'instant.</div></div>"; return;
+  }
+  container.innerHTML=cS.map(s=>{
+    const isOwn=s.uid===me.id;
+    const vc=vcnt[s.id]||0;
+    const myVoteOn=cV.find(v=>v.voter===me.id&&v.sid===s.id);
+    const canVote=cSess.open&&!isOwn&&!myVote;
+    return "<div class='secret-card"+(isOwn?" mine":"")+(myVoteOn?" voted":"")+(s.found?" found":"")+"'>"
+      +(s.found?"<div class='found-banner'>Secret decouvert &mdash; <span class='found-author'>"+esc(s.uid)+"</span> <span style='font-weight:400'>trouve par "+esc(s.foundBy||"?")+"</span></div>":"")
+      +"<div class='secret-text'>\""+esc(s.text)+"\"</div>"
+      +"<div class='secret-footer'>"
+        +"<div class='secret-meta'>"
+          +"<span class='secret-id'>#"+s.id.slice(-6)+"</span>"
+          +(isOwn?"<span class='badge blue'>Ton secret</span>":"<span class='badge gray'>auteur : ???</span>")
+          +(myVoteOn?"<span class='badge purple'>Ton vote</span>":"")
+          +"<span class='badge gray'>"+vc+" vote"+(vc>1?"s":"")+"</span>"
+        +"</div>"
+        +"<div class='vote-area'>"
+          +(isOwn?"<span style='font-size:12px;color:var(--text3)'>Ton secret</span>"
+            :myVoteOn?"<span style='font-size:12px;color:var(--text3)'>Vote envoye</span>"
+            :canVote?"<div class='vote-select'><select id='vs-"+s.id+"'><option value=''>Qui est l'auteur ?</option>"
+              +others.map(u=>"<option value='"+esc(u)+"'>"+esc(u)+"</option>").join("")
+              +"</select><button class='btn sm' onclick=\"submitVote('"+s.id+"',document.getElementById('vs-"+s.id+"').value)\">Voter</button></div>"
+            :"<span style='font-size:12px;color:var(--text3)'>"+(cSess.open?"Deja vote":"Votes fermes")+"</span>"
+          )
+        +"</div>"
+      +"</div>"
+    +"</div>";
+  }).join("");
+}
+
+// ── REVELATIONS ───────────────────────────────────────────────────────────────
+window.setRevFilter = f => {
+  revF=f;
+  document.querySelectorAll(".filt").forEach((el,i)=>el.classList.toggle("on",["all","found","notfound"][i]===f));
+  renderRevelations();
+};
+function renderRevelations() {
+  const found=cS.filter(s=>s.found), nf=cS.filter(s=>!s.found);
+  document.getElementById("rev-count").textContent=found.length+"/"+cS.length;
+  const toShow=revF==="found"?found:revF==="notfound"?nf:cS;
+  const c=document.getElementById("rev-list");
+  if(!toShow.length){
+    c.innerHTML="<div class='empty-state'><div class='empty-icon'>&#128269;</div><div class='empty-text'>"+(revF==="found"?"Aucun secret decouvert pour l'instant.":"Tous trouves !")+"</div></div>"; return;
+  }
+  c.innerHTML=toShow.map(s=>
+    "<div class='secret-card"+(s.found?" found":"")+"'>"
+    +(s.found?"<div class='found-banner'>Auteur : <span class='found-author'>"+esc(s.uid)+"</span> &mdash; decouvert par "+esc(s.foundBy||"?")+"</div>"
+             :"<div style='padding:6px 10px;background:var(--bg);border-radius:6px;margin-bottom:10px;font-size:11px;color:var(--text3)'>PAS ENCORE TROUVE — auteur : ???</div>")
+    +"<div class='secret-text'>\""+esc(s.text)+"\"</div>"
+    +"<div class='secret-meta'><span class='secret-id'>#"+s.id.slice(-6)+"</span></div>"
+    +"</div>"
+  ).join("");
+}
+
+// ── CLASSEMENT ────────────────────────────────────────────────────────────────
+function renderClassement() {
+  const ids=[...new Set([...Object.keys(cP),...cS.map(s=>s.uid)])].filter(id=>id!=="admin");
+  const ranked=ids.map(id=>({
+    id,
+    total:cP[id]?.total||0,
+    found:  (cP[id]?.history||[]).filter(h=>h.type==="vote").length,
+    defense:(cP[id]?.history||[]).filter(h=>h.type==="defense").length
+  })).sort((a,b)=>b.total-a.total||a.id.localeCompare(b.id));
+  const c=document.getElementById("rlist");
+  if(!ranked.length){ c.innerHTML="<div class='empty-state'><div class='empty-icon'>&#127942;</div><div class='empty-text'>Aucun participant.</div></div>"; return; }
+  const M=["&#127945;","&#127946;","&#127947;"];
+  c.innerHTML=ranked.map((u,i)=>
+    "<div class='score-row'>"
+    +"<div class='score-rank"+(i<3?" r"+(i+1):"")+"'>"+(i<3?M[i]:i+1)+"</div>"
+    +"<div class='score-av' style='background:"+av(u.id)+"'>"+u.id[0].toUpperCase()+"</div>"
+    +"<div class='score-info'>"
+      +"<div class='score-name'>"+esc(u.id)+(u.id===me.id?" <span style='font-size:11px;color:var(--text3)'>(toi)</span>":"")+"</div>"
+      +"<div class='score-detail'>"+u.found+" trouve"+(u.found>1?"s":"")+" · "+u.defense+" defense"+(u.defense>1?"s":"")+"</div>"
+    +"</div>"
+    +"<div class='score-pts'>"+u.total+" pts</div>"
+    +"</div>"
+  ).join("");
+}
+
+// ── DEFI ──────────────────────────────────────────────────────────────────────
+function renderDefi() {
+  const myD=cD.filter(d=>d.assignedTo===me.id);
+  const c=document.getElementById("defi-container");
+  if(!myD.length){
+    c.innerHTML="<div class='card'><div class='card-body'><div class='empty-state'><div class='empty-icon'>&#127919;</div><div class='empty-text'>Aucun defi pour l'instant.<br>L'animateur va bientot t'en attribuer un !</div></div></div></div>"; return;
+  }
+  c.innerHTML=myD.map(d=>{
+    const s=cS.find(x=>x.id===d.secretId);
+    const snippet=s?'"'+s.text.slice(0,80)+(s.text.length>80?"...":"")+"\"":"(secret inconnu)";
+    const statusMap={pending:"<span class='badge purple'>En cours</span>",success:"<span class='badge green'>Reussi +3 pts</span>",failed:"<span class='badge red'>Echoue</span>"};
+    return "<div class='card' style='margin-bottom:16px'>"
+      +"<div class='card-head'><div class='card-title'>Defi secret</div>"+statusMap[d.status||"pending"]+"</div>"
+      +"<div class='card-body'>"
+        +"<div class='defi-highlight'>"
+          +"<div class='defi-title'>Ta mission</div>"
+          +"<div class='defi-text'>Fais en sorte que <strong>"+esc(d.targetVoter)+"</strong> vote pour <strong>"+esc(d.targetAuthor)+"</strong> sur le secret :<br><em style='color:var(--text2);font-size:13px'>"+esc(snippet)+"</em></div>"
+          +"<div style='margin-top:12px;display:flex;gap:8px;flex-wrap:wrap'><span class='badge purple'>+3 pts si reussi</span></div>"
+        +"</div>"
+      +"</div>"
+    +"</div>";
+  }).join("");
+}
+
+// ── ADMIN ─────────────────────────────────────────────────────────────────────
+window.openVotes = async () => {
+  if(cSess.open){ toast("Session deja ouverte.","nf"); return; }
+  const n=(cSess.sessCount||0)+1;
+  await setDoc(doc(db,C.SE,"current"),{open:true,sessId:"SESS"+Date.now(),label:"Session "+n,sessCount:n,openedAt:serverTimestamp()});
+  toast("Votes ouverts !","ok");
+};
+window.closeVotes = async () => {
+  if(!cSess.open){ toast("Aucune session.","nf"); return; }
+  await updateDoc(doc(db,C.SE,"current"),{open:false,closedAt:serverTimestamp()});
+  toast("Votes fermes.","nf");
+};
+window.resetVotes = async () => {
+  if(!confirm("Supprimer tous les votes ? (points conserves)")) return;
+  const snap=await getDocs(collection(db,C.V));
+  await Promise.all(snap.docs.map(d=>deleteDoc(doc(db,C.V,d.id))));
+  await setDoc(doc(db,C.SE,"current"),{open:false,sessCount:cSess.sessCount||0});
+  toast("Votes reinitialises.","nf");
+};
+window.resetPoints = async () => {
+  if(!confirm("Remettre tous les points a zero ?")) return;
+  const snap=await getDocs(collection(db,C.P));
+  await Promise.all(snap.docs.map(d=>setDoc(doc(db,C.P,d.id),{total:0,history:[]})));
+  toast("Points a zero.","nf");
+};
+window.resetEverything = async () => {
+  if(!confirm("Supprimer TOUT ? Secrets, comptes, votes, points, defis ?")) return;
+  if(!confirm("Derniere confirmation — tout sera efface !")) return;
+  const [s1,s2,s3,s4,s5]=await Promise.all([getDocs(collection(db,C.S)),getDocs(collection(db,C.V)),getDocs(collection(db,C.P)),getDocs(collection(db,C.U)),getDocs(collection(db,C.D))]);
+  await Promise.all([
+    ...s1.docs.map(d=>deleteDoc(doc(db,C.S,d.id))),
+    ...s2.docs.map(d=>deleteDoc(doc(db,C.V,d.id))),
+    ...s3.docs.map(d=>deleteDoc(doc(db,C.P,d.id))),
+    ...s4.docs.filter(d=>!d.data().isAdmin).map(d=>deleteDoc(doc(db,C.U,d.id))),
+    ...s5.docs.map(d=>deleteDoc(doc(db,C.D,d.id))),
+  ]);
+  await setDoc(doc(db,C.SE,"current"),{open:false,sessCount:0});
+  toast("Tout supprime !","ok");
+};
+
+// Liaison Krappo
+window.linkKrappo = async () => {
+  const sid=document.getElementById("krappo-session-id").value.trim();
+  if(!sid){ toast("Entre un ID de session.","er"); return; }
+  await updateDoc(doc(db,C.SE,"current"),{krappoSession:sid});
+  document.getElementById("krappo-linked-info").textContent="Session Krappo liee : "+sid;
+  toast("Session Krappo liee !","ok");
+  // TODO: appel API Krappo pour importer les participants
+  // const resp = await fetch("https://api.krappo.app/sessions/"+sid+"/participants", { headers: { Authorization: "Bearer TOKEN" } });
+  // const participants = await resp.json();
+  // participants.forEach(p => createUserFromKrappo(p));
+};
+
+// Creer compte manuellement
+window.adminCreateUser = async () => {
+  const p=document.getElementById("np").value.trim();
+  const n=document.getElementById("nn").value.trim();
+  const pw=document.getElementById("npw").value;
+  const err=document.getElementById("np-err");
+  err.textContent="";
+  if(!p||!n||!pw){ err.textContent="Remplis tous les champs."; return; }
+  if(pw.length<4){ err.textContent="Mot de passe trop court."; return; }
+  const baseId=p+"."+n[0].toUpperCase();
+  try {
+    const snap=await getDocs(collection(db,C.U));
+    const ids=snap.docs.map(d=>d.data().id.toLowerCase());
+    let id=baseId, ct=2;
+    while(ids.includes(id.toLowerCase())){ id=baseId+ct; ct++; }
+    await setDoc(doc(db,C.U,id),{id,prenom:p,nom:n,pw,isAdmin:false});
+    await setDoc(doc(db,C.P,id),{total:0,history:[]});
+    document.getElementById("np-prev").textContent="Compte cree : "+id;
+    document.getElementById("np").value=""; document.getElementById("nn").value=""; document.getElementById("npw").value="";
+    toast("Compte "+id+" cree !","ok");
+    renderAdminUsers();
+  } catch(e){ err.textContent="Erreur."; console.error(e); }
+};
+
+// Update apercu nom
+["np","nn"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener("input",()=>{
+    const p=document.getElementById("np").value.trim();
+    const n=document.getElementById("nn").value.trim();
+    document.getElementById("np-prev").textContent=(p||n)?"Apercu : "+(p||"?")+"."+(n?n[0].toUpperCase():"?"):"";
+  });
+});
+
+window.aTab = t => {
+  curAT=t;
+  ["s","v","d","u"].forEach(x=>{
+    const el=document.getElementById("at-"+x); if(el) el.style.display=x===t?"":"none";
+  });
+  document.querySelectorAll("#v-admin .filt").forEach((el,i)=>el.classList.toggle("on",["s","v","d","u"][i]===t));
+  if(t==="v") renderAdminVotes();
+  if(t==="d") renderAdminDefis();
+  if(t==="u") renderAdminUsers();
+};
+
+window.givePoints = async (vid, voter, correct) => {
+  const v=cV.find(x=>x.id===vid); if(!v) return;
+  await updateDoc(doc(db,C.V,vid),{validated:true,pointsGiven:true,adminValidated:correct});
+  if(correct){
+    // +3 pts au votant
+    const pRef=doc(db,C.P,voter);
+    const pSnap=await getDoc(pRef);
+    if(pSnap.exists()){
+      await updateDoc(pRef,{total:increment(3),history:[...(pSnap.data().history||[]),{type:"vote",pts:3,ts:Date.now()}]});
+    } else {
+      await setDoc(pRef,{total:3,history:[{type:"vote",pts:3,ts:Date.now()}]});
+    }
+    // Marquer secret comme trouve
+    const sRef=doc(db,C.S,v.sid);
+    const sSnap=await getDoc(sRef);
+    if(sSnap.exists()&&!sSnap.data().found){
+      await updateDoc(sRef,{found:true,foundBy:voter});
+    }
+    toast("+3 pts pour "+voter,"ok");
+  } else {
+    toast("Refuse — 0 pt.","nf");
+  }
+};
+
+window.admHide = async docId => {
+  if(!confirm("Recacher ce secret ?")) return;
+  await updateDoc(doc(db,C.S,docId),{found:false,foundBy:null});
+  toast("Secret recache.","nf");
+};
+window.admEdit = docId => {
+  const s=cS.find(x=>x.id===docId); if(!s) return;
+  const cell=document.getElementById("st-"+docId);
+  cell.innerHTML="<input class='einp' id='ei-"+docId+"' value='"+esc(s.text)+"' maxlength='300'>";
+  const inp=document.getElementById("ei-"+docId); if(inp) inp.focus();
+  const row=cell.closest("tr");
+  if(row){
+    const btn=row.querySelectorAll("button")[0];
+    if(btn){ btn.textContent="Sauver"; btn.onclick=async()=>{ const t=inp?.value.trim(); if(!t) return; await updateDoc(doc(db,C.S,docId),{text:t}); toast("Modifie.","ok"); }; }
+  }
+};
+window.admDel = async docId => {
+  if(!confirm("Supprimer ce secret ?")) return;
+  await deleteDoc(doc(db,C.S,docId));
+  const vSnap=await getDocs(query(collection(db,C.V),where("sid","==",docId)));
+  await Promise.all(vSnap.docs.map(d=>deleteDoc(doc(db,C.V,d.id))));
+  toast("Supprime.","ok");
+};
+window.admDelUser = async userId => {
+  if(!confirm("Supprimer le compte de "+userId+" ?")) return;
+  await deleteDoc(doc(db,C.U,userId));
+  toast("Compte supprime.","ok");
+};
+
+function renderAdmin() {
+  const uids=[...new Set(cS.map(s=>s.uid))].length;
+  const totalPts=Object.values(cP).reduce((a,p)=>a+(p.total||0),0);
+  document.getElementById("as1").textContent=cS.length;
+  document.getElementById("as2").textContent=cU.length;
+  document.getElementById("as3").textContent=cV.length;
+  document.getElementById("as4").textContent=totalPts;
+
+  const dot=document.getElementById("sdot"),lbl=document.getElementById("slbl"),info=document.getElementById("sinfo");
+  if(cSess.open){
+    dot.className="sess-status-dot open"; lbl.textContent=(cSess.label||"Session")+" — ouverte";
+    const vc=cV.filter(v=>v.sessId===cSess.sessId).length;
+    info.textContent=vc+" vote(s) deposes";
+  } else {
+    dot.className="sess-status-dot closed"; lbl.textContent="Votes fermes";
+    info.textContent=cSess.sessCount?"Derniere : Session "+cSess.sessCount:"Aucune session.";
+  }
+
+  const vcnt={};cV.forEach(v=>{vcnt[v.sid]=(vcnt[v.sid]||0)+1;});
+  const tbody=document.getElementById("asb");
+  if(!cS.length){ tbody.innerHTML="<tr><td colspan='5' style='text-align:center;padding:24px;color:var(--text3);font-size:13px'>Aucun secret.</td></tr>"; }
+  else {
+    tbody.innerHTML=cS.map(s=>
+      "<tr>"
+      +"<td><span class='td-author'>"+esc(s.uid)+"</span></td>"
+      +"<td><div class='td-secret' id='st-"+s.id+"'>"+esc(s.text)+"</div></td>"
+      +"<td>"+( vcnt[s.id]||0)+"</td>"
+      +"<td>"+(s.found?"<span class='badge green'>Trouve</span>":"<span class='badge gray'>Mystere</span>")+"</td>"
+      +"<td style='display:flex;gap:6px;flex-wrap:wrap'>"
+        +"<button class='btn ghost sm' onclick='admEdit(\""+s.id+"\")'>Modifier</button>"
+        +"<button class='btn danger sm' onclick='admDel(\""+s.id+"\")'>Supprimer</button>"
+        +(s.found?"<button class='btn ghost sm' onclick='admHide(\""+s.id+"\")'>Recacher</button>":"")
+      +"</td>"
+      +"</tr>"
+    ).join("");
+  }
+  if(curAT==="v") renderAdminVotes();
+  if(curAT==="d") renderAdminDefis();
+  if(curAT==="u") renderAdminUsers();
+}
+
+function renderAdminVotes() {
+  const tbody=document.getElementById("avb");
+  if(!cV.length){ tbody.innerHTML="<tr><td colspan='6' style='text-align:center;padding:24px;color:var(--text3);font-size:13px'>Aucun vote.</td></tr>"; return; }
+  const sorted=[...cV].sort((a,b)=>(a.validated?1:0)-(b.validated?1:0));
+  tbody.innerHTML=sorted.map(v=>{
+    const s=cS.find(x=>x.id===v.sid);
+    return "<tr style='"+(v.validated?"opacity:.55":"")+"'>"
+      +"<td><span class='td-author'>"+esc(v.voter)+"</span></td>"
+      +"<td class='td-secret'>"+(s?esc(s.text.slice(0,45))+(s.text.length>45?"...":""):"<em style='opacity:.5'>supprime</em>")+"</td>"
+      +"<td><strong style='color:var(--purple)'>"+esc(v.guess)+"</strong></td>"
+      +"<td><strong style='color:var(--accent)'>"+esc(v.secretUid||"?")+"</strong></td>"
+      +"<td>"+(v.validated?(v.adminValidated?"<span class='badge green'>+3 pts</span>":"<span class='badge red'>Refuse</span>"):(v.correct?"<span class='badge blue'>Correct</span>":"<span class='badge amber'>Incorrect</span>"))+"</td>"
+      +"<td>"+(v.validated?"<span style='font-size:12px;color:var(--text3)'>Traite</span>":"<div style='display:flex;gap:6px'><button class='btn green sm' onclick=\"givePoints('"+v.id+"','"+esc(v.voter)+"',true)\">+3 pts</button><button class='btn danger sm' onclick=\"givePoints('"+v.id+"','"+esc(v.voter)+"',false)\">Refuser</button></div>")+"</td>"
+    +"</tr>";
+  }).join("");
+}
+
+function renderAdminUsers() {
+  const tbody=document.getElementById("ub");
+  if(!cU.length){ tbody.innerHTML="<tr><td colspan='5' style='text-align:center;padding:24px;color:var(--text3);font-size:13px'>Aucun joueur.</td></tr>"; return; }
+  tbody.innerHTML=cU.map(u=>
+    "<tr>"
+    +"<td><strong>"+esc(u.id)+"</strong></td>"
+    +"<td>"+esc(u.prenom||"—")+"</td>"
+    +"<td>"+esc(u.nom||"—")+"</td>"
+    +"<td><strong style='color:var(--accent)'>"+(cP[u.id]?.total||0)+" pts</strong></td>"
+    +"<td><button class='btn danger sm' onclick='admDelUser(\""+esc(u.id)+"\")'>Supprimer</button></td>"
+    +"</tr>"
+  ).join("");
+}
+
+// ── DEFIS ADMIN ───────────────────────────────────────────────────────────────
+function populateDefiSelects() {
+  const uids=[...new Set(cS.map(s=>s.uid))].filter(u=>u!=="admin");
+  const sel=(id,opts)=>{ const el=document.getElementById(id); if(!el) return; el.innerHTML="<option value=''>Choisir</option>"+opts.map(u=>"<option value='"+esc(u)+"'>"+esc(u)+"</option>").join(""); };
+  sel("d-to",uids); sel("d-voter",uids); sel("d-target",uids);
+  const sEl=document.getElementById("d-secret"); if(!sEl) return;
+  sEl.innerHTML="<option value=''>Choisir un secret</option>"+cS.map(s=>"<option value='"+esc(s.id)+"'>"+esc(s.text.slice(0,50))+"</option>").join("");
+}
+window.createDefi = async () => {
+  const to=document.getElementById("d-to").value, voter=document.getElementById("d-voter").value;
+  const sid=document.getElementById("d-secret").value, target=document.getElementById("d-target").value;
+  const err=document.getElementById("d-err"); err.textContent="";
+  if(!to||!voter||!sid||!target){ err.textContent="Remplis tous les champs."; return; }
+  if(to===voter){ err.textContent="Le participant ne peut pas avoir un defi sur lui-meme."; return; }
+  await addDoc(collection(db,C.D),{assignedTo:to,targetVoter:voter,secretId:sid,targetAuthor:target,status:"pending",createdAt:serverTimestamp()});
+  toast("Defi cree pour "+to+" !","ok");
+  ["d-to","d-voter","d-secret","d-target"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+};
+async function resolveDefiAuto(d) {
+  await updateDoc(doc(db,C.D,d.id),{status:"success"});
+  const pRef=doc(db,C.P,d.assignedTo), pSnap=await getDoc(pRef);
+  if(pSnap.exists()){
+    await updateDoc(pRef,{total:increment(3),history:[...(pSnap.data().history||[]),{type:"defi",pts:3,ts:Date.now()}]});
+  } else {
+    await setDoc(pRef,{total:3,history:[{type:"defi",pts:3,ts:Date.now()}]});
+  }
+  toast("Defi reussi par "+d.assignedTo+" ! +3 pts","ok");
+}
+window.resolveDefi = async (id,status) => {
+  const d=cD.find(x=>x.id===id); if(!d) return;
+  await updateDoc(doc(db,C.D,id),{status});
+  if(status==="success") await resolveDefiAuto(d);
+  else toast("Defi marque comme echoue.","nf");
+};
+window.deleteDefi = async id => {
+  if(!confirm("Supprimer ce defi ?")) return;
+  await deleteDoc(doc(db,C.D,id));
+  toast("Defi supprime.","ok");
+};
+function renderAdminDefis() {
+  populateDefiSelects();
+  const tbody=document.getElementById("db");
+  if(!cD.length){ tbody.innerHTML="<tr><td colspan='6' style='text-align:center;padding:24px;color:var(--text3);font-size:13px'>Aucun defi.</td></tr>"; return; }
+  const sm={"pending":"<span class='badge purple'>En cours</span>","success":"<span class='badge green'>Reussi</span>","failed":"<span class='badge red'>Echoue</span>"};
+  tbody.innerHTML=cD.map(d=>{
+    const s=cS.find(x=>x.id===d.secretId);
+    return "<tr>"
+      +"<td><span class='td-author'>"+esc(d.assignedTo)+"</span></td>"
+      +"<td><strong style='color:var(--purple)'>"+esc(d.targetVoter)+"</strong></td>"
+      +"<td class='td-secret'>"+(s?esc(s.text.slice(0,40)):"?")+"</td>"
+      +"<td><strong style='color:var(--accent)'>"+esc(d.targetAuthor)+"</strong></td>"
+      +"<td>"+(sm[d.status]||"—")+"</td>"
+      +"<td style='display:flex;gap:6px;flex-wrap:wrap'>"
+        +(d.status==="pending"?"<button class='btn green sm' onclick=\"resolveDefi('"+d.id+"','success')\">Reussi</button><button class='btn danger sm' onclick=\"resolveDefi('"+d.id+"','failed')\">Echoue</button>":"")
+        +"<button class='btn ghost sm' onclick='deleteDefi(\""+d.id+"\")'>Suppr.</button>"
+      +"</td>"
+    +"</tr>";
+  }).join("");
+}
+
+init();
+</script>
+</body>
+</html>
