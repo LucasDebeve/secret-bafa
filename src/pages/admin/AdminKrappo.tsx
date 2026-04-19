@@ -6,6 +6,15 @@ import { useData } from "../../contexts/DataContext";
 import { useToast } from "../../contexts/ToastContext";
 import { genSalt, hashPassword } from "../../lib/crypto";
 
+type KrappoParticipant = {
+  id: number;
+  utilisateurId: number;
+  prenom: string;
+  nom: string;
+  fonction: string;
+  typeSession: string | null;
+};
+
 export default function AdminKrappo() {
   const { me, fid } = useAuth();
   const { cSess } = useData();
@@ -17,13 +26,49 @@ export default function AdminKrappo() {
   const [pw, setPw] = useState("");
   const [preview, setPreview] = useState("");
   const [err, setErr] = useState("");
+  const [importing, setImporting] = useState(false);
 
   if (!fid || !me?.isAdmin) return null;
 
   const link = async () => {
     if (!krSid.trim()) return toast("Entre un ID de session.", "er");
-    await updateDoc(fDoc(fid, "SE", "current"), { krappoSession: krSid.trim() });
-    toast("Session Krappo liee !", "ok");
+    setImporting(true);
+    try {
+      await updateDoc(fDoc(fid, "SE", "current"), { krappoSession: krSid.trim() });
+
+      const res = await fetch(`https://app.krappo.fr/api/session/${krSid.trim()}/participants`);
+      if (!res.ok) throw new Error("Impossible de recuperer les participants Krappo.");
+      const participants: KrappoParticipant[] = await res.json();
+
+      const snap = await getDocs(fCol(fid, "U"));
+      const ids = snap.docs.map((d) => (d.data() as { id: string }).id.toLowerCase());
+
+      let created = 0;
+      for (const p of participants) {
+        if (
+          me.prenom.toLowerCase() === p.prenom.toLowerCase() &&
+          me.nom.toLowerCase() === p.nom.toLowerCase()
+        ) continue;
+
+        const base = p.prenom + "." + p.nom;
+        let uid = base, ct = 2;
+        while (ids.includes(uid.toLowerCase())) { uid = base + ct; ct++; }
+        ids.push(uid.toLowerCase());
+
+        const password = p.prenom + "." + p.nom;
+        const salt = genSalt();
+        const pwHash = await hashPassword(password, salt);
+        await setDoc(fDoc(fid, "U", uid), { id: uid, prenom: p.prenom, nom: p.nom, isAdmin: false, pwHash, pwSalt: salt });
+        await setDoc(fDoc(fid, "P", uid), { total: 0, history: [] });
+        created++;
+      }
+
+      toast(`Session liee ! ${created} compte(s) cree(s).`, "ok");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Erreur lors de l'import.", "er");
+    } finally {
+      setImporting(false);
+    }
   };
 
   const create = async () => {
@@ -51,7 +96,9 @@ export default function AdminKrappo() {
         <div className="text-[12px] text-app-text3 mb-3">Lie cette partie a une session Krappo pour importer automatiquement les participants.</div>
         <div className="flex gap-2.5 flex-wrap">
           <input className="inp flex-1 min-w-[180px]" value={krSid} onChange={(e) => setKrSid(e.target.value)} placeholder="ID de session Krappo" />
-          <button className="btn" onClick={link}>Lier la session</button>
+          <button className="btn" onClick={link} disabled={importing}>
+            {importing ? "Import en cours..." : "Lier la session"}
+          </button>
         </div>
         {cSess.krappoSession && (
           <div className="mt-2.5 text-[12px] text-app-text3">Session Krappo liee : {cSess.krappoSession}</div>
