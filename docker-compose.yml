@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    image: secret-bafa:latest
+    container_name: secret-bafa
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:80"

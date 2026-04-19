@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply min-h-screen;
+  }
+  body {
+    @apply bg-app-bg text-app-text font-sans text-[14px] leading-[1.5];
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 bg-accent text-white border-0 rounded-lg px-4 py-[9px] cursor-pointer font-semibold text-[13px] transition whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[.98];
+  }
+  .btn-full { @apply w-full mt-4; }
+  .btn-ghost { @apply bg-transparent border border-app-border2 text-app-text2 hover:bg-app-bg hover:border-app-border; }
+  .btn-danger { @apply bg-transparent border border-brand-red-border text-brand-red hover:bg-brand-red-bg; }
+  .btn-green { @apply bg-brand-green; }
+  .btn-amber { @apply bg-brand-amber; }
+  .btn-sm { @apply py-1.5 px-3 text-xs; }
+
+  /* Inputs */
+  .inp {
+    @apply w-full bg-app-surface border border-app-border2 rounded-lg text-app-text px-3 py-[9px] text-[13px] outline-none transition;
+  }
+  .inp:focus { @apply border-accent ring-[3px] ring-accent/10; }
+
+  .lbl { @apply block text-[12px] font-medium text-app-text2 mb-[5px] mt-[14px]; }
+  .err { @apply text-[12px] text-brand-red mt-1.5; }
+
+  /* Tabs */
+  .tabs {
+    @apply flex bg-app-bg rounded-lg p-[3px] mb-6 gap-[3px];
+  }
+  .tab {
+    @apply flex-1 bg-transparent border-0 text-app-text3 py-[7px] rounded-md cursor-pointer text-[13px] font-medium transition;
+  }
+  .tab.on { @apply bg-app-surface text-app-text shadow-card; }
+
+  /* Cards */
+  .card { @apply bg-app-surface border border-app-border rounded-[10px] mb-5; }
+  .card-head {
+    @apply px-5 py-4 border-b border-app-border flex items-center justify-between gap-3;
+  }
+  .card-title { @apply text-[14px] font-semibold; }
+  .card-body { @apply p-5; }
+  .card-body-tight { @apply p-0; }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] font-semibold border;
+  }
+  .badge-gray { @apply bg-app-bg text-app-text3 border-app-border; }
+  .badge-green { @apply bg-brand-green-bg text-brand-green border-brand-green-border; }
+  .badge-red { @apply bg-brand-red-bg text-brand-red border-brand-red-border; }
+  .badge-amber { @apply bg-brand-amber-bg text-brand-amber border-brand-amber-border; }
+  .badge-blue { @apply bg-accent-bg text-accent border-accent-border; }
+  .badge-purple { @apply bg-brand-purple-bg text-brand-purple border-brand-purple-border; }
+
+  /* Nav */
+  .nav-item {
+    @apply flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-[13px] font-medium text-app-text2 transition border-0 bg-transparent w-full text-left;
+  }
+  .nav-item:hover { @apply bg-app-bg text-app-text; }
+  .nav-item.on { @apply bg-accent-bg text-accent; }
+
+  /* Secret cards */
+  .secret-card {
+    @apply bg-app-surface border border-app-border rounded-[10px] px-[18px] py-4 transition;
+  }
+  .secret-card:hover { @apply border-app-border2; }
+  .secret-card.mine { @apply border-l-[3px] border-l-accent; }
+  .secret-card.found { @apply border-l-[3px] border-l-brand-green; }
+  .secret-card.voted { @apply border-l-[3px] border-l-brand-purple; }
+
+  /* Tables */
+  .tbl { @apply w-full border-collapse; }
+  .tbl th {
+    @apply text-left px-4 py-2.5 text-[11px] font-semibold text-app-text3 tracking-wider border-b border-app-border uppercase whitespace-nowrap;
+  }
+  .tbl td {
+    @apply px-4 py-3 text-[13px] border-b border-app-border align-middle;
+  }
+  .tbl tr:last-child td { @apply border-b-0; }
+  .tbl tr:hover td { @apply bg-app-bg; }
+
+  /* Filters */
+  .filt {
+    @apply bg-app-surface border border-app-border text-app-text2 py-1.5 px-3.5 rounded-full cursor-pointer text-[12px] font-medium transition hover:border-accent hover:text-accent;
+  }
+  .filt.on { @apply bg-accent border-accent text-white; }
+
+  /* Session banner */
+  .sess-banner { @apply rounded-[10px] px-[18px] py-3.5 mb-5 flex items-center gap-3 text-[13px] font-medium; }
+  .sess-banner-open { @apply bg-brand-green-bg border border-brand-green-border text-emerald-800; }
+  .sess-banner-closed { @apply bg-brand-amber-bg border border-brand-amber-border text-amber-800; }
+  .sess-banner-wait { @apply bg-app-bg border border-app-border text-app-text3; }
+
+  /* Stat cards */
+  .stat-card { @apply bg-app-surface border border-app-border rounded-[10px] px-5 py-[18px]; }
+  .stat-label { @apply text-[12px] font-medium text-app-text3 mb-1.5 flex items-center gap-1.5; }
+  .stat-value { @apply text-[26px] font-bold text-app-text leading-none; }
+  .stat-sub { @apply text-[12px] text-app-text3 mt-1; }
+
+  /* Danger zone */
+  .danger-zone {
+    @apply flex items-center justify-between gap-3 px-4 py-3.5 bg-brand-red-bg border border-brand-red-border rounded-lg mb-3 flex-wrap;
+  }
+
+  /* Score rows */
+  .score-row { @apply flex items-center gap-3 px-4 py-2.5 border-b border-app-border last:border-b-0; }
+
+  /* Sess control */
+  .sess-control {
+    @apply flex items-center gap-2.5 px-5 py-3.5 bg-app-bg rounded-lg mb-4 flex-wrap;
+  }
+  .sess-dot { @apply w-2.5 h-2.5 rounded-full flex-shrink-0; }
+  .sess-dot-open { @apply bg-brand-green shadow-[0_0_0_3px_rgba(16,185,129,.15)]; }
+  .sess-dot-closed { @apply bg-brand-red; }
+
+  /* Defi highlight */
+  .defi-highlight {
+    @apply bg-gradient-to-br from-brand-purple-bg to-accent-bg border border-brand-purple-border rounded-[10px] p-5 mb-5;
+  }
+
+  /* Empty state */
+  .empty-state { @apply text-center px-6 py-12 text-app-text3; }
+}
