@@ -24,6 +24,15 @@ export async function hashPassword(pw: string, salt: string): Promise<string> {
     .join("");
 }
 
+export function normUserId(v: string): string {
+  return String(v || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
 export function normFid(v: string): string {
   return String(v || "")
     .trim()

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { fDoc, formationDoc } from "../lib/firebase";
-import { genSalt, hashPassword, normFid } from "../lib/crypto";
+import { genSalt, hashPassword, normFid, normUserId } from "../lib/crypto";
 import type { SafeUser } from "../types";
 
 type AuthState = {
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const existing = await getDoc(formationDoc(c));
       if (existing.exists()) return "Ce code de formation existe deja.";
       await setDoc(formationDoc(c), { name, createdAt: serverTimestamp() });
-      const adminId = prenom + "." + nom[0].toUpperCase();
+      const adminId = normUserId(prenom) + "." + normUserId(nom);
       const salt = genSalt();
       const pwHash = await hashPassword(pw, salt);
       await setDoc(fDoc(c, "U", adminId), { id: adminId, prenom, nom, isAdmin: true, pwHash, pwSalt: salt });

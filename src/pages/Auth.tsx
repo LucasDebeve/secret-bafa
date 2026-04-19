@@ -75,7 +75,7 @@ export default function Auth() {
               <label className="lbl">CODE DE FORMATION</label>
               <input className="inp" value={lf} onChange={(e) => setLf(e.target.value)} placeholder="BAFA-ETE-2024" autoComplete="off" />
               <label className="lbl">IDENTIFIANT</label>
-              <input className="inp" value={li} onChange={(e) => setLi(e.target.value)} placeholder="Prenom.Initiale" autoComplete="off" />
+              <input className="inp" value={li} onChange={(e) => setLi(e.target.value)} placeholder="prenom.nom" autoComplete="off" />
               <label className="lbl">MOT DE PASSE</label>
               <input type="password" className="inp" value={lp} onChange={(e) => setLp(e.target.value)} placeholder="••••••••" />
               {loginErr && <div className="err">{loginErr}</div>}
