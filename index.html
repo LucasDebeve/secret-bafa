@@ -262,16 +262,42 @@ tr:hover td { background: var(--bg); }
       <div class="auth-logo-name">Secret BAFA</div>
     </div>
     <div class="auth-card">
-      <div class="auth-title">Connexion</div>
-      <div class="auth-sub">Entre tes identifiants pour acces au jeu</div>
-      <label>IDENTIFIANT</label>
-      <input type="text" id="li" placeholder="Prenom.Initiale" autocomplete="off">
-      <label>MOT DE PASSE</label>
-      <input type="password" id="lp" placeholder="••••••••">
-      <div id="le" class="err"></div>
-      <button class="btn full" id="btn-login" onclick="doLogin()">Se connecter</button>
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)">
-        Ton compte est cree par l'animateur. Contacte-le si tu n'as pas tes identifiants.
+      <div class="tabs">
+        <button class="tab on" id="tab-join" onclick="authTab('join')">Rejoindre</button>
+        <button class="tab" id="tab-create" onclick="authTab('create')">Creer formation</button>
+      </div>
+
+      <div id="pane-join">
+        <div class="auth-title">Connexion</div>
+        <div class="auth-sub">Rejoins une session de formation existante</div>
+        <label>CODE DE FORMATION</label>
+        <input type="text" id="lf" placeholder="BAFA-ETE-2024" autocomplete="off">
+        <label>IDENTIFIANT</label>
+        <input type="text" id="li" placeholder="Prenom.Initiale" autocomplete="off">
+        <label>MOT DE PASSE</label>
+        <input type="password" id="lp" placeholder="••••••••">
+        <div id="le" class="err"></div>
+        <button class="btn full" id="btn-login" onclick="doLogin()">Se connecter</button>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)">
+          Ton compte est cree par l'animateur. Demande-lui le code de formation et tes identifiants.
+        </div>
+      </div>
+
+      <div id="pane-create" style="display:none">
+        <div class="auth-title">Creer une formation</div>
+        <div class="auth-sub">Initialise une nouvelle session de formation (animateur)</div>
+        <label>CODE DE FORMATION</label>
+        <input type="text" id="cf-code" placeholder="BAFA-ETE-2024" autocomplete="off">
+        <label>NOM DE LA FORMATION</label>
+        <input type="text" id="cf-name" placeholder="BAFA Ete 2024" autocomplete="off">
+        <div class="row2">
+          <div><label>PRENOM ANIMATEUR</label><input type="text" id="cf-prenom" placeholder="Adrien"></div>
+          <div><label>NOM ANIMATEUR</label><input type="text" id="cf-nom" placeholder="Martin"></div>
+        </div>
+        <label>MOT DE PASSE ANIMATEUR</label>
+        <input type="password" id="cf-pw" placeholder="min 6 caracteres">
+        <div id="cf-err" class="err"></div>
+        <button class="btn full" id="btn-create" onclick="doCreateFormation()">Creer et se connecter</button>
       </div>
     </div>
   </div>
@@ -314,6 +340,8 @@ tr:hover td { background: var(--bg); }
       </button>
     </nav>
     <div class="sidebar-user">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Formation</div>
+      <div id="fid-label" style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px;word-break:break-all"></div>
       <div class="sidebar-user-info">
         <div class="user-av" id="user-av"></div>
         <div>
@@ -595,8 +623,27 @@ const cfg = {
 const app = initializeApp(cfg);
 const db  = getFirestore(app);
 const C   = { U:"users", S:"secrets", V:"votes", P:"points", SE:"session", D:"defis" };
+const F   = "formations"; // top-level tenant collection
 
-let me = JSON.parse(sessionStorage.getItem("sb_me") || "null");
+let me  = JSON.parse(sessionStorage.getItem("sb_me") || "null");
+let fid = sessionStorage.getItem("sb_fid") || null;
+
+// ── PASSWORD HASHING (Web Crypto) ────────────────────────────────────────────
+function genSalt() {
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function hashPassword(pw, salt) {
+  const data = new TextEncoder().encode(salt + ":" + pw);
+  const buf  = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function normFid(v) { return String(v||"").trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"-"); }
+
+// ── TENANT-SCOPED FIRESTORE HELPERS ──────────────────────────────────────────
+function fCol(k){ return collection(db, F, fid, C[k]); }
+function fDoc(k, id){ return doc(db, F, fid, C[k], id); }
 let cS=[], cV=[], cSess={open:false}, cP={}, cD=[], cU=[];
 let curV="home", curAT="s", revF="all";
 
@@ -613,13 +660,8 @@ window.toast = (msg,type) => {
 async function init() {
   const t = setTimeout(() => showPage("page-auth"), 6000);
   try {
-    const ref  = doc(db, C.U, "admin");
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      await setDoc(ref, { id:"admin", pw:"admin2024", isAdmin:true, prenom:"Admin", nom:"BAFA" });
-    }
     clearTimeout(t);
-    me ? boot() : showPage("page-auth");
+    (me && fid) ? boot() : showPage("page-auth");
   } catch(e) {
     clearTimeout(t);
     console.error(e);
@@ -637,25 +679,77 @@ function showPage(id) {
 }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
+window.authTab = t => {
+  document.getElementById("tab-join").classList.toggle("on", t==="join");
+  document.getElementById("tab-create").classList.toggle("on", t==="create");
+  document.getElementById("pane-join").style.display   = t==="join"   ? "" : "none";
+  document.getElementById("pane-create").style.display = t==="create" ? "" : "none";
+};
+
 window.doLogin = async () => {
-  const id  = document.getElementById("li").value.trim();
-  const pw  = document.getElementById("lp").value;
-  const err = document.getElementById("le");
-  const btn = document.getElementById("btn-login");
+  const fCode = normFid(document.getElementById("lf").value);
+  const id    = document.getElementById("li").value.trim();
+  const pw    = document.getElementById("lp").value;
+  const err   = document.getElementById("le");
+  const btn   = document.getElementById("btn-login");
   err.textContent="";
-  if(!id||!pw){ err.textContent="Remplis tous les champs."; return; }
+  if(!fCode||!id||!pw){ err.textContent="Remplis tous les champs."; return; }
   btn.disabled=true; btn.textContent="Connexion...";
   try {
-    const snap = await getDocs(collection(db,C.U));
-    const user = snap.docs.map(d=>d.data()).find(u=>u.id.toLowerCase()===id.toLowerCase()&&u.pw===pw);
-    if(!user){ err.textContent="Identifiant ou mot de passe incorrect."; return; }
-    me=user; sessionStorage.setItem("sb_me",JSON.stringify(me)); boot();
-  } catch(e){ err.textContent="Erreur. Verifie les regles Firestore."; console.error(e); }
+    const fSnap = await getDoc(doc(db, F, fCode));
+    if(!fSnap.exists()){ err.textContent="Formation introuvable. Verifie le code."; return; }
+    fid = fCode;
+    const uSnap = await getDocs(collection(db, F, fid, C.U));
+    const user  = uSnap.docs.map(d=>d.data()).find(u=>u.id.toLowerCase()===id.toLowerCase());
+    if(!user){ err.textContent="Identifiant ou mot de passe incorrect."; fid=null; return; }
+    const hash = await hashPassword(pw, user.pwSalt||"");
+    if(hash !== user.pwHash){ err.textContent="Identifiant ou mot de passe incorrect."; fid=null; return; }
+    const safe = { id:user.id, prenom:user.prenom, nom:user.nom, isAdmin:!!user.isAdmin };
+    me = safe;
+    sessionStorage.setItem("sb_me", JSON.stringify(me));
+    sessionStorage.setItem("sb_fid", fid);
+    boot();
+  } catch(e){ err.textContent="Erreur. Verifie les regles Firestore."; console.error(e); fid=null; }
   finally{ btn.disabled=false; btn.textContent="Se connecter"; }
 };
 
+window.doCreateFormation = async () => {
+  const code   = normFid(document.getElementById("cf-code").value);
+  const name   = document.getElementById("cf-name").value.trim();
+  const prenom = document.getElementById("cf-prenom").value.trim();
+  const nom    = document.getElementById("cf-nom").value.trim();
+  const pw     = document.getElementById("cf-pw").value;
+  const err    = document.getElementById("cf-err");
+  const btn    = document.getElementById("btn-create");
+  err.textContent="";
+  if(!code||!name||!prenom||!nom||!pw){ err.textContent="Remplis tous les champs."; return; }
+  if(pw.length<6){ err.textContent="Mot de passe trop court (6 caracteres min)."; return; }
+  btn.disabled=true; btn.textContent="Creation...";
+  try {
+    const existing = await getDoc(doc(db, F, code));
+    if(existing.exists()){ err.textContent="Ce code de formation existe deja."; return; }
+    await setDoc(doc(db, F, code), { name, createdAt: serverTimestamp() });
+    fid = code;
+    const adminId = prenom+"."+nom[0].toUpperCase();
+    const salt    = genSalt();
+    const pwHash  = await hashPassword(pw, salt);
+    await setDoc(fDoc("U", adminId), { id:adminId, prenom, nom, isAdmin:true, pwHash, pwSalt:salt });
+    await setDoc(fDoc("SE","current"), { open:false, sessCount:0 });
+    const safe = { id:adminId, prenom, nom, isAdmin:true };
+    me = safe;
+    sessionStorage.setItem("sb_me", JSON.stringify(me));
+    sessionStorage.setItem("sb_fid", fid);
+    toast("Formation creee !","ok");
+    boot();
+  } catch(e){ err.textContent="Erreur lors de la creation."; console.error(e); fid=null; }
+  finally{ btn.disabled=false; btn.textContent="Creer et se connecter"; }
+};
+
 window.doLogout = () => {
-  me=null; sessionStorage.removeItem("sb_me"); showPage("page-auth");
+  me=null; fid=null;
+  sessionStorage.removeItem("sb_me");
+  sessionStorage.removeItem("sb_fid");
+  showPage("page-auth");
 };
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
@@ -665,46 +759,52 @@ function boot() {
   document.getElementById("user-av").style.background = av(me.id);
   document.getElementById("user-name").textContent = displayId;
   document.getElementById("user-role").textContent = me.isAdmin ? "Animateur" : "Participant";
+  document.getElementById("fid-label").textContent = fid || "";
+  getDoc(doc(db, F, fid)).then(s => {
+    if(s.exists() && s.data().name){
+      document.getElementById("fid-label").textContent = s.data().name + " ("+fid+")";
+    }
+  }).catch(()=>{});
   document.getElementById("nav-admin").style.display         = me.isAdmin ? "" : "none";
   document.getElementById("nav-admin-section").style.display = me.isAdmin ? "" : "none";
   document.getElementById("nav-defi").style.display          = me.isAdmin ? "none" : "";
   showPage("page-app");
 
-  // Listeners permanents
-  onSnapshot(doc(db,C.SE,"current"), snap => {
+  // Listeners permanents (scoped par formation)
+  onSnapshot(fDoc("SE","current"), snap => {
     cSess = snap.exists() ? snap.data() : {open:false};
     renderSessionBadge();
     if(curV==="secrets")  renderSecrets();
     if(curV==="home")     renderHome();
     if(curV==="admin")    renderAdmin();
   });
-  onSnapshot(collection(db,C.P), snap => {
+  onSnapshot(fCol("P"), snap => {
     cP={}; snap.docs.forEach(d=>{ cP[d.id]=d.data(); });
     if(curV==="classement") renderClassement();
     if(curV==="home")       renderHome();
     if(curV==="admin")      renderAdmin();
   });
-  onSnapshot(collection(db,C.D), snap => {
+  onSnapshot(fCol("D"), snap => {
     cD=snap.docs.map(d=>({id:d.id,...d.data()}));
     if(curV==="defi")  renderDefi();
     if(curV==="home")  renderHome();
     if(curV==="admin"&&curAT==="d") renderAdminDefis();
   });
-  onSnapshot(query(collection(db,C.S),orderBy("createdAt","desc")), snap => {
+  onSnapshot(query(fCol("S"),orderBy("createdAt","desc")), snap => {
     cS=snap.docs.map(d=>({id:d.id,...d.data()}));
     if(curV==="secrets")     renderSecrets();
     if(curV==="revelations") renderRevelations();
     if(curV==="home")        renderHome();
     if(curV==="admin")       renderAdmin();
   });
-  onSnapshot(collection(db,C.V), snap => {
+  onSnapshot(fCol("V"), snap => {
     cV=snap.docs.map(d=>({id:d.id,...d.data()}));
     if(curV==="secrets")    renderSecrets();
     if(curV==="classement") renderClassement();
     if(curV==="home")       renderHome();
     if(curV==="admin")      renderAdmin();
   });
-  onSnapshot(collection(db,C.U), snap => {
+  onSnapshot(fCol("U"), snap => {
     cU=snap.docs.map(d=>d.data()).filter(u=>!u.isAdmin);
     if(curV==="admin"&&curAT==="u") renderAdminUsers();
   });
@@ -819,7 +919,7 @@ window.submitSecret = async () => {
   if(cS.find(s=>s.uid===me.id)){ err.textContent="Tu as deja un secret."; return; }
   btn.disabled=true; btn.textContent="Envoi...";
   try {
-    await addDoc(collection(db,C.S),{uid:me.id,text,createdAt:serverTimestamp()});
+    await addDoc(fCol("S"),{uid:me.id,text,createdAt:serverTimestamp()});
     document.getElementById("si").value=""; document.getElementById("scnt").textContent="0";
     toast("Secret confie !","ok");
   } catch(e){ err.textContent="Erreur."; console.error(e); }
@@ -834,14 +934,14 @@ window.submitVote = async (sid, guessed) => {
   if(cV.find(v=>v.voter===me.id&&v.sessId===cSess.sessId)){ toast("Tu as deja vote !","er"); return; }
   const correct=guessed===s.uid;
   try {
-    await addDoc(collection(db,C.V),{
+    await addDoc(fCol("V"),{
       voter:me.id, sid, secretUid:s.uid, guess:guessed,
       correct, validated:false, pointsGiven:false,
       sessId:cSess.sessId, ts:serverTimestamp()
     });
     // +1 pt defense automatique si vote incorrect
     if(!correct){
-      const pRef=doc(db,C.P,s.uid);
+      const pRef=fDoc("P",s.uid);
       const pSnap=await getDoc(pRef);
       if(pSnap.exists()){
         await updateDoc(pRef,{total:increment(1),history:[...(pSnap.data().history||[]),{type:"defense",pts:1,ts:Date.now()}]});
@@ -980,39 +1080,39 @@ function renderDefi() {
 window.openVotes = async () => {
   if(cSess.open){ toast("Session deja ouverte.","nf"); return; }
   const n=(cSess.sessCount||0)+1;
-  await setDoc(doc(db,C.SE,"current"),{open:true,sessId:"SESS"+Date.now(),label:"Session "+n,sessCount:n,openedAt:serverTimestamp()});
+  await setDoc(fDoc("SE","current"),{open:true,sessId:"SESS"+Date.now(),label:"Session "+n,sessCount:n,openedAt:serverTimestamp()});
   toast("Votes ouverts !","ok");
 };
 window.closeVotes = async () => {
   if(!cSess.open){ toast("Aucune session.","nf"); return; }
-  await updateDoc(doc(db,C.SE,"current"),{open:false,closedAt:serverTimestamp()});
+  await updateDoc(fDoc("SE","current"),{open:false,closedAt:serverTimestamp()});
   toast("Votes fermes.","nf");
 };
 window.resetVotes = async () => {
   if(!confirm("Supprimer tous les votes ? (points conserves)")) return;
-  const snap=await getDocs(collection(db,C.V));
-  await Promise.all(snap.docs.map(d=>deleteDoc(doc(db,C.V,d.id))));
-  await setDoc(doc(db,C.SE,"current"),{open:false,sessCount:cSess.sessCount||0});
+  const snap=await getDocs(fCol("V"));
+  await Promise.all(snap.docs.map(d=>deleteDoc(fDoc("V",d.id))));
+  await setDoc(fDoc("SE","current"),{open:false,sessCount:cSess.sessCount||0});
   toast("Votes reinitialises.","nf");
 };
 window.resetPoints = async () => {
   if(!confirm("Remettre tous les points a zero ?")) return;
-  const snap=await getDocs(collection(db,C.P));
-  await Promise.all(snap.docs.map(d=>setDoc(doc(db,C.P,d.id),{total:0,history:[]})));
+  const snap=await getDocs(fCol("P"));
+  await Promise.all(snap.docs.map(d=>setDoc(fDoc("P",d.id),{total:0,history:[]})));
   toast("Points a zero.","nf");
 };
 window.resetEverything = async () => {
   if(!confirm("Supprimer TOUT ? Secrets, comptes, votes, points, defis ?")) return;
   if(!confirm("Derniere confirmation — tout sera efface !")) return;
-  const [s1,s2,s3,s4,s5]=await Promise.all([getDocs(collection(db,C.S)),getDocs(collection(db,C.V)),getDocs(collection(db,C.P)),getDocs(collection(db,C.U)),getDocs(collection(db,C.D))]);
+  const [s1,s2,s3,s4,s5]=await Promise.all([getDocs(fCol("S")),getDocs(fCol("V")),getDocs(fCol("P")),getDocs(fCol("U")),getDocs(fCol("D"))]);
   await Promise.all([
-    ...s1.docs.map(d=>deleteDoc(doc(db,C.S,d.id))),
-    ...s2.docs.map(d=>deleteDoc(doc(db,C.V,d.id))),
-    ...s3.docs.map(d=>deleteDoc(doc(db,C.P,d.id))),
-    ...s4.docs.filter(d=>!d.data().isAdmin).map(d=>deleteDoc(doc(db,C.U,d.id))),
-    ...s5.docs.map(d=>deleteDoc(doc(db,C.D,d.id))),
+    ...s1.docs.map(d=>deleteDoc(fDoc("S",d.id))),
+    ...s2.docs.map(d=>deleteDoc(fDoc("V",d.id))),
+    ...s3.docs.map(d=>deleteDoc(fDoc("P",d.id))),
+    ...s4.docs.filter(d=>!d.data().isAdmin).map(d=>deleteDoc(fDoc("U",d.id))),
+    ...s5.docs.map(d=>deleteDoc(fDoc("D",d.id))),
   ]);
-  await setDoc(doc(db,C.SE,"current"),{open:false,sessCount:0});
+  await setDoc(fDoc("SE","current"),{open:false,sessCount:0});
   toast("Tout supprime !","ok");
 };
 
@@ -1020,7 +1120,7 @@ window.resetEverything = async () => {
 window.linkKrappo = async () => {
   const sid=document.getElementById("krappo-session-id").value.trim();
   if(!sid){ toast("Entre un ID de session.","er"); return; }
-  await updateDoc(doc(db,C.SE,"current"),{krappoSession:sid});
+  await updateDoc(fDoc("SE","current"),{krappoSession:sid});
   document.getElementById("krappo-linked-info").textContent="Session Krappo liee : "+sid;
   toast("Session Krappo liee !","ok");
   // TODO: appel API Krappo pour importer les participants
@@ -1040,12 +1140,14 @@ window.adminCreateUser = async () => {
   if(pw.length<4){ err.textContent="Mot de passe trop court."; return; }
   const baseId=p+"."+n[0].toUpperCase();
   try {
-    const snap=await getDocs(collection(db,C.U));
+    const snap=await getDocs(fCol("U"));
     const ids=snap.docs.map(d=>d.data().id.toLowerCase());
     let id=baseId, ct=2;
     while(ids.includes(id.toLowerCase())){ id=baseId+ct; ct++; }
-    await setDoc(doc(db,C.U,id),{id,prenom:p,nom:n,pw,isAdmin:false});
-    await setDoc(doc(db,C.P,id),{total:0,history:[]});
+    const salt   = genSalt();
+    const pwHash = await hashPassword(pw, salt);
+    await setDoc(fDoc("U",id),{id,prenom:p,nom:n,isAdmin:false,pwHash,pwSalt:salt});
+    await setDoc(fDoc("P",id),{total:0,history:[]});
     document.getElementById("np-prev").textContent="Compte cree : "+id;
     document.getElementById("np").value=""; document.getElementById("nn").value=""; document.getElementById("npw").value="";
     toast("Compte "+id+" cree !","ok");
@@ -1076,10 +1178,10 @@ window.aTab = t => {
 
 window.givePoints = async (vid, voter, correct) => {
   const v=cV.find(x=>x.id===vid); if(!v) return;
-  await updateDoc(doc(db,C.V,vid),{validated:true,pointsGiven:true,adminValidated:correct});
+  await updateDoc(fDoc("V",vid),{validated:true,pointsGiven:true,adminValidated:correct});
   if(correct){
     // +3 pts au votant
-    const pRef=doc(db,C.P,voter);
+    const pRef=fDoc("P",voter);
     const pSnap=await getDoc(pRef);
     if(pSnap.exists()){
       await updateDoc(pRef,{total:increment(3),history:[...(pSnap.data().history||[]),{type:"vote",pts:3,ts:Date.now()}]});
@@ -1087,7 +1189,7 @@ window.givePoints = async (vid, voter, correct) => {
       await setDoc(pRef,{total:3,history:[{type:"vote",pts:3,ts:Date.now()}]});
     }
     // Marquer secret comme trouve
-    const sRef=doc(db,C.S,v.sid);
+    const sRef=fDoc("S",v.sid);
     const sSnap=await getDoc(sRef);
     if(sSnap.exists()&&!sSnap.data().found){
       await updateDoc(sRef,{found:true,foundBy:voter});
@@ -1100,7 +1202,7 @@ window.givePoints = async (vid, voter, correct) => {
 
 window.admHide = async docId => {
   if(!confirm("Recacher ce secret ?")) return;
-  await updateDoc(doc(db,C.S,docId),{found:false,foundBy:null});
+  await updateDoc(fDoc("S",docId),{found:false,foundBy:null});
   toast("Secret recache.","nf");
 };
 window.admEdit = docId => {
@@ -1111,19 +1213,19 @@ window.admEdit = docId => {
   const row=cell.closest("tr");
   if(row){
     const btn=row.querySelectorAll("button")[0];
-    if(btn){ btn.textContent="Sauver"; btn.onclick=async()=>{ const t=inp?.value.trim(); if(!t) return; await updateDoc(doc(db,C.S,docId),{text:t}); toast("Modifie.","ok"); }; }
+    if(btn){ btn.textContent="Sauver"; btn.onclick=async()=>{ const t=inp?.value.trim(); if(!t) return; await updateDoc(fDoc("S",docId),{text:t}); toast("Modifie.","ok"); }; }
   }
 };
 window.admDel = async docId => {
   if(!confirm("Supprimer ce secret ?")) return;
-  await deleteDoc(doc(db,C.S,docId));
-  const vSnap=await getDocs(query(collection(db,C.V),where("sid","==",docId)));
-  await Promise.all(vSnap.docs.map(d=>deleteDoc(doc(db,C.V,d.id))));
+  await deleteDoc(fDoc("S",docId));
+  const vSnap=await getDocs(query(fCol("V"),where("sid","==",docId)));
+  await Promise.all(vSnap.docs.map(d=>deleteDoc(fDoc("V",d.id))));
   toast("Supprime.","ok");
 };
 window.admDelUser = async userId => {
   if(!confirm("Supprimer le compte de "+userId+" ?")) return;
-  await deleteDoc(doc(db,C.U,userId));
+  await deleteDoc(fDoc("U",userId));
   toast("Compte supprime.","ok");
 };
 
@@ -1213,13 +1315,13 @@ window.createDefi = async () => {
   const err=document.getElementById("d-err"); err.textContent="";
   if(!to||!voter||!sid||!target){ err.textContent="Remplis tous les champs."; return; }
   if(to===voter){ err.textContent="Le participant ne peut pas avoir un defi sur lui-meme."; return; }
-  await addDoc(collection(db,C.D),{assignedTo:to,targetVoter:voter,secretId:sid,targetAuthor:target,status:"pending",createdAt:serverTimestamp()});
+  await addDoc(fCol("D"),{assignedTo:to,targetVoter:voter,secretId:sid,targetAuthor:target,status:"pending",createdAt:serverTimestamp()});
   toast("Defi cree pour "+to+" !","ok");
   ["d-to","d-voter","d-secret","d-target"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
 };
 async function resolveDefiAuto(d) {
-  await updateDoc(doc(db,C.D,d.id),{status:"success"});
-  const pRef=doc(db,C.P,d.assignedTo), pSnap=await getDoc(pRef);
+  await updateDoc(fDoc("D",d.id),{status:"success"});
+  const pRef=fDoc("P",d.assignedTo), pSnap=await getDoc(pRef);
   if(pSnap.exists()){
     await updateDoc(pRef,{total:increment(3),history:[...(pSnap.data().history||[]),{type:"defi",pts:3,ts:Date.now()}]});
   } else {
@@ -1229,13 +1331,13 @@ async function resolveDefiAuto(d) {
 }
 window.resolveDefi = async (id,status) => {
   const d=cD.find(x=>x.id===id); if(!d) return;
-  await updateDoc(doc(db,C.D,id),{status});
+  await updateDoc(fDoc("D",id),{status});
   if(status==="success") await resolveDefiAuto(d);
   else toast("Defi marque comme echoue.","nf");
 };
 window.deleteDefi = async id => {
   if(!confirm("Supprimer ce defi ?")) return;
-  await deleteDoc(doc(db,C.D,id));
+  await deleteDoc(fDoc("D",id));
   toast("Defi supprime.","ok");
 };
 function renderAdminDefis() {
