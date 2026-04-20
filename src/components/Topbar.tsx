@@ -8,6 +8,7 @@ const TITLES: Record<View, string> = {
   classement: "Classement",
   defi: "Mon defi",
   admin: "Panel animateur",
+  profile: "Paramètres du profil",
 };
 
 type Props = {
