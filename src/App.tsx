@@ -11,6 +11,7 @@ import Revelations from "./pages/Revelations";
 import Classement from "./pages/Classement";
 import Defi from "./pages/Defi";
 import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
 import type { View } from "./types";
 
 function Shell() {
@@ -43,6 +44,7 @@ function Shell() {
           {view === "classement" && <Classement />}
           {view === "defi" && <Defi />}
           {view === "admin" && <Admin />}
+          {view === "profile" && <Profile />}
         </div>
       </main>
     </div>

@@ -57,4 +57,4 @@ export type Defi = {
 
 export type ToastKind = "ok" | "er" | "nf" | "";
 
-export type View = "home" | "secrets" | "revelations" | "classement" | "defi" | "admin";
+export type View = "home" | "secrets" | "revelations" | "classement" | "defi" | "admin" | "profile";

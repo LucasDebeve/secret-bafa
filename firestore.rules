@@ -19,7 +19,10 @@ service cloud.firestore {
       match /users/{uid} {
         allow read: if true;
         allow create: if request.resource.data.keys().hasAll(['id','prenom','nom','isAdmin','pwHash','pwSalt']);
-        allow update, delete: if false;
+        allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pwHash','pwSalt'])
+                      && request.resource.data.pwHash is string
+                      && request.resource.data.pwSalt is string;
+        allow delete: if true;
       }
 
       // Session de vote : lisible, modifiable avec forme valide
@@ -48,7 +51,7 @@ service cloud.firestore {
                       && request.resource.data.validated == false
                       && request.resource.data.pointsGiven == false;
         allow update: if true;
-        allow delete: if false;
+        allow delete: if true;
       }
 
       // Points : lisibles et modifiables (limitation Track A)

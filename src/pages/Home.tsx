@@ -26,17 +26,6 @@ export default function Home({ onNavigate }: { onNavigate: (v: View) => void }) 
 
   return (
     <div>
-      <div className="bg-gradient-to-br from-accent-bg to-sky-50 border border-accent-border rounded-[10px] px-5 py-4 mb-5 flex items-center gap-3.5">
-        <div className="w-9 h-9 bg-accent rounded-lg flex items-center justify-center text-white font-bold text-[13px] flex-shrink-0">K</div>
-        <div className="flex-1">
-          <div className="font-semibold text-[13px]">Session Krappo</div>
-          <div className="text-[12px] text-app-text3 mt-0.5">
-            {cSess.krappoSession ? `Session liee : ${cSess.krappoSession}` : "En attente de liaison avec une session Krappo..."}
-          </div>
-        </div>
-        <span className={`badge ${cSess.krappoSession ? "badge-green" : "badge-gray"}`}>{cSess.krappoSession ? "Lie" : "Non lie"}</span>
-      </div>
-
       <div className="grid grid-cols-2 gap-3 mb-5 md:grid-cols-4 md:gap-4 md:mb-6">
         <div className="stat-card">
           <div className="stat-label">Secrets deposes</div>

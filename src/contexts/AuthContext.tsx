@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { fDoc, formationDoc } from "../lib/firebase";
 import { genSalt, hashPassword, normFid, normUserId } from "../lib/crypto";
 import type { SafeUser } from "../types";
@@ -15,6 +15,7 @@ type AuthState = {
     nom: string;
     pw: string;
   }) => Promise<string | null>;
+  updatePassword: (currentPw: string, newPw: string) => Promise<string | null>;
   logout: () => void;
 };
 
@@ -86,6 +87,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updatePassword = useCallback(async (currentPw: string, newPw: string): Promise<string | null> => {
+    if (!me || !fid) return "Non authentifié.";
+    if (!currentPw || !newPw) return "Remplis tous les champs.";
+    if (newPw.length < 8) return "Le nouveau mot de passe doit faire au moins 8 caractères.";
+    try {
+      const uSnap = await getDoc(fDoc(fid, "U", me.id));
+      if (!uSnap.exists()) return "Utilisateur introuvable.";
+      const user = uSnap.data() as { pwHash?: string; pwSalt?: string };
+      const currentHash = await hashPassword(currentPw, user.pwSalt || "");
+      if (currentHash !== user.pwHash) return "Mot de passe actuel incorrect.";
+      const newSalt = genSalt();
+      const newHash = await hashPassword(newPw, newSalt);
+      await updateDoc(fDoc(fid, "U", me.id), { pwHash: newHash, pwSalt: newSalt });
+      return null;
+    } catch (e) {
+      console.error(e);
+      return "Erreur lors du changement de mot de passe.";
+    }
+  }, [me, fid]);
+
   const logout = useCallback(() => {
     sessionStorage.removeItem("sb_me");
     sessionStorage.removeItem("sb_fid");
@@ -93,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setFid(null);
   }, []);
 
-  return <Ctx.Provider value={{ me, fid, login, createFormation, logout }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ me, fid, login, createFormation, updatePassword, logout }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

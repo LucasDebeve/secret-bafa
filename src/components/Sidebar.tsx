@@ -95,7 +95,26 @@ export default function Sidebar({ view, onNavigate, isOpen, onClose }: Props) {
             <div className="text-[11px] text-app-text3">{me.isAdmin ? "Animateur" : "Participant"}</div>
           </div>
         </div>
-        <button className="btn btn-ghost btn-sm w-full" onClick={logout}>Se deconnecter</button>
+        <a
+          href="https://app.krappo.fr"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-ghost btn-sm w-full mb-2 flex items-center justify-center gap-1.5"
+        >
+          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="flex-shrink-0">
+            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" y1="14" x2="21" y2="3" />
+          </svg>
+          Krappo
+        </a>
+        <button
+          className={`btn btn-ghost btn-sm w-full mb-2 ${view === "profile" ? "on" : ""}`}
+          onClick={() => handleNav("profile")}
+        >
+          Paramètres du profil
+        </button>
+        <button className="btn btn-ghost btn-sm w-full" onClick={logout}>Se déconnecter</button>
       </div>
     </aside>
   );

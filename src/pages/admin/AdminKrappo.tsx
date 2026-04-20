@@ -50,12 +50,15 @@ export default function AdminKrappo() {
           me.nom.toLowerCase() === p.nom.toLowerCase()
         ) continue;
 
-        const base = p.prenom + "." + p.nom;
+        // Normalisation des noms : on enlève les accents é => e, à => a, etc.
+        const prenomBase = p.prenom.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        const base = prenomBase + "." + p.nom[0].toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         let uid = base, ct = 2;
         while (ids.includes(uid.toLowerCase())) { uid = base + ct; ct++; }
         ids.push(uid.toLowerCase());
 
-        const password = p.prenom + "." + p.nom;
+        const password = base;
         const salt = genSalt();
         const pwHash = await hashPassword(password, salt);
         await setDoc(fDoc(fid, "U", uid), { id: uid, prenom: p.prenom, nom: p.nom, isAdmin: false, pwHash, pwSalt: salt });
@@ -75,7 +78,8 @@ export default function AdminKrappo() {
     setErr("");
     if (!prenom || !nom || !pw) return setErr("Remplis tous les champs.");
     if (pw.length < 6) return setErr("Mot de passe trop court (6 caracteres min).");
-    const base = prenom + "." + nom[0].toUpperCase();
+    const prenomBase = prenom.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const base = prenomBase + "." + nom[0].toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const snap = await getDocs(fCol(fid, "U"));
     const ids = snap.docs.map((d) => (d.data() as { id: string }).id.toLowerCase());
     let id = base, ct = 2;
@@ -117,9 +121,9 @@ export default function AdminKrappo() {
             </div>
           </div>
           <label className="lbl">MOT DE PASSE</label>
-          <input type="password" className="inp mb-2.5" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="min 4 caracteres" />
+          <input type="password" className="inp mb-2.5" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="min 6 caracteres" />
           <div className="text-[12px] text-app-text3 mb-2">
-            {preview || ((prenom || nom) ? `Apercu : ${prenom || "?"}.${nom ? nom[0].toUpperCase() : "?"}` : "")}
+            {preview || ((prenom || nom) ? `Apercu : ${prenom.normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "?"}.${nom.normalize("NFD").replace(/[\u0300-\u036f]/g, "") ? nom.normalize("NFD").replace(/[\u0300-\u036f]/g, "")[0].toUpperCase() : "?"}` : "")}
           </div>
           {err && <div className="err mb-2">{err}</div>}
           <button className="btn btn-sm" onClick={create}>Creer le compte</button>
