@@ -73,15 +73,6 @@ export default function Secrets() {
         sessId: cSess.sessId,
         ts: serverTimestamp(),
       });
-      if (!correct) {
-        const pRef = fDoc(fid, "P", guessed);
-        const pSnap = await getDoc(pRef);
-        if (pSnap.exists()) {
-          await updateDoc(pRef, { total: increment(1), history: [...(pSnap.data().history || []), { type: "defense", pts: 1, ts: Date.now() }] });
-        } else {
-          await setDoc(pRef, { total: 1, history: [{ type: "defense", pts: 1, ts: Date.now() }] });
-        }
-      }
       for (const d of cD) {
         if (d.status === "pending" && d.targetVoter === me.id && d.secretId === sid && d.targetAuthor === guessed) {
           await updateDoc(fDoc(fid, "D", d.id), { status: "success" });

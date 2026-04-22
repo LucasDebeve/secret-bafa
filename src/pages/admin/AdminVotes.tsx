@@ -34,7 +34,14 @@ export default function AdminVotes() {
         toast(`Correct mais secret deja trouve — 0 pt pour ${voter}.`, "nf");
       }
     } else {
-      toast("Refuse — 0 pt.", "nf");
+      const pRef = fDoc(fid, "P", v.secretUid);
+      const pSnap = await getDoc(pRef);
+      if (pSnap.exists()) {
+        await updateDoc(pRef, { total: increment(1), history: [...(pSnap.data().history || []), { type: "defense", pts: 1, ts: Date.now() }] });
+      } else {
+        await setDoc(pRef, { total: 1, history: [{ type: "defense", pts: 1, ts: Date.now() }] });
+      }
+      toast(`Refuse — +1 pt defense pour ${v.secretUid}.`, "nf");
     }
   };
 
@@ -87,7 +94,7 @@ export default function AdminVotes() {
                 <tr key={v.id} style={v.validated ? { opacity: 0.55 } : undefined}>
                   <td><span className="font-mono text-[11px] text-app-text3">{formatTime(v.ts)}</span></td>
                   <td><span className="font-semibold text-accent text-[12px]">{v.voter}</span></td>
-                  <td className="max-w-[200px] italic text-app-text2">{s ? `${s.text.slice(0, 45)}${s.text.length > 45 ? "..." : ""}` : <em className="opacity-50">supprime</em>}</td>
+                  <td className="italic text-app-text2">{s ? s.text : <em className="opacity-50">supprime</em>}</td>
                   <td><strong className="text-brand-purple">{v.guess}</strong></td>
                   <td><strong className="text-accent">{v.secretUid || "?"}</strong></td>
                   <td><StatusBadge v={v} /></td>
@@ -128,7 +135,7 @@ export default function AdminVotes() {
               </div>
               {s && (
                 <div className="text-[12px] italic text-app-text2 mb-2.5">
-                  "{s.text.slice(0, 60)}{s.text.length > 60 ? "..." : ""}"
+                  "{s.text}"
                 </div>
               )}
               {!v.validated && (
