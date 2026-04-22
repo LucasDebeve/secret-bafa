@@ -61,7 +61,6 @@ export default function Secrets() {
     const s = cS.find((x) => x.id === sid);
     if (!s || s.uid === me.id) return toast("Pas ton propre secret !", "er");
     if (cV.find((v) => v.voter === me.id && v.sessId === cSess.sessId && v.guess === v.secretUid)) return toast("Tu as deja vote correctement !", "er");
-    const correct = guessed === s.uid;
     try {
       await addDoc(fCol(fid, "V"), {
         voter: me.id,
