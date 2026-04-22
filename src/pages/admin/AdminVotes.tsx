@@ -15,25 +15,47 @@ export default function AdminVotes() {
     if (!v) return;
     await updateDoc(fDoc(fid, "V", vid), { validated: true, pointsGiven: true, adminValidated: correct });
     if (correct) {
-      const pRef = fDoc(fid, "P", voter);
-      const pSnap = await getDoc(pRef);
-      if (pSnap.exists()) {
-        await updateDoc(pRef, { total: increment(3), history: [...(pSnap.data().history || []), { type: "vote", pts: 3, ts: Date.now() }] });
-      } else {
-        await setDoc(pRef, { total: 3, history: [{ type: "vote", pts: 3, ts: Date.now() }] });
-      }
       const sRef = fDoc(fid, "S", v.sid);
       const sSnap = await getDoc(sRef);
-      if (sSnap.exists() && !sSnap.data().found) {
-        await updateDoc(sRef, { found: true, foundBy: voter });
+      const alreadyFound = sSnap.exists() && sSnap.data().found;
+      if (!alreadyFound) {
+        const pRef = fDoc(fid, "P", voter);
+        const pSnap = await getDoc(pRef);
+        if (pSnap.exists()) {
+          await updateDoc(pRef, { total: increment(3), history: [...(pSnap.data().history || []), { type: "vote", pts: 3, ts: Date.now() }] });
+        } else {
+          await setDoc(pRef, { total: 3, history: [{ type: "vote", pts: 3, ts: Date.now() }] });
+        }
+        if (sSnap.exists()) {
+          await updateDoc(sRef, { found: true, foundBy: voter });
+        }
+        toast(`+3 pts pour ${voter} (premier trouveur !)`, "ok");
+      } else {
+        toast(`Correct mais secret deja trouve — 0 pt pour ${voter}.`, "nf");
       }
-      toast(`+3 pts pour ${voter}`, "ok");
     } else {
       toast("Refuse — 0 pt.", "nf");
     }
   };
 
-  const sorted = [...cV].sort((a, b) => (a.validated ? 1 : 0) - (b.validated ? 1 : 0));
+  const formatTime = (ts: unknown): string => {
+    if (!ts || typeof ts !== "object") return "—";
+    const t = ts as Record<string, unknown>;
+    let ms = 0;
+    if (typeof t.seconds === "number") ms = t.seconds * 1000;
+    else if (typeof t.toMillis === "function") ms = (t.toMillis as () => number)();
+    else return "—";
+    return new Date(ms).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  };
+
+  const toSeconds = (ts: unknown): number => {
+    if (!ts || typeof ts !== "object") return 0;
+    const t = ts as Record<string, unknown>;
+    if (typeof t.seconds === "number") return t.seconds;
+    if (typeof t.toMillis === "function") return (t.toMillis as () => number)() / 1000;
+    return 0;
+  };
+  const sorted = [...cV].sort((a, b) => toSeconds(a.ts) - toSeconds(b.ts));
   const empty = !cV.length;
 
   const StatusBadge = ({ v }: { v: typeof cV[number] }) => {
@@ -49,20 +71,21 @@ export default function AdminVotes() {
     <div className="card">
       <div className="card-head">
         <div className="card-title">Valider les propositions</div>
-        <span className="badge badge-blue hidden sm:inline-flex">+3 pts si correct · +1 pt defense</span>
+        <span className="badge badge-blue hidden sm:inline-flex">+3 pts au 1er trouveur · +1 pt a la cible d'un mauvais vote</span>
       </div>
 
       {/* Table — desktop */}
       <div className="hidden md:block card-body card-body-tight overflow-x-auto">
         <table className="tbl">
-          <thead><tr><th>Votant</th><th>Secret</th><th>A devine</th><th>Vrai auteur</th><th>Statut</th><th>Action</th></tr></thead>
+          <thead><tr><th>Heure</th><th>Votant</th><th>Secret</th><th>A devine</th><th>Vrai auteur</th><th>Statut</th><th>Action</th></tr></thead>
           <tbody>
             {empty ? (
-              <tr><td colSpan={6} className="text-center py-6 text-app-text3">Aucun vote.</td></tr>
+              <tr><td colSpan={7} className="text-center py-6 text-app-text3">Aucun vote.</td></tr>
             ) : sorted.map((v) => {
               const s = cS.find((x) => x.id === v.sid);
               return (
                 <tr key={v.id} style={v.validated ? { opacity: 0.55 } : undefined}>
+                  <td><span className="font-mono text-[11px] text-app-text3">{formatTime(v.ts)}</span></td>
                   <td><span className="font-semibold text-accent text-[12px]">{v.voter}</span></td>
                   <td className="max-w-[200px] italic text-app-text2">{s ? `${s.text.slice(0, 45)}${s.text.length > 45 ? "..." : ""}` : <em className="opacity-50">supprime</em>}</td>
                   <td><strong className="text-brand-purple">{v.guess}</strong></td>
@@ -94,7 +117,10 @@ export default function AdminVotes() {
           return (
             <div key={v.id} className="px-4 py-3.5 border-b border-app-border last:border-b-0" style={v.validated ? { opacity: 0.6 } : undefined}>
               <div className="flex items-center justify-between gap-2 mb-1.5">
-                <span className="font-semibold text-accent text-[13px]">{v.voter}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[11px] text-app-text3">{formatTime(v.ts)}</span>
+                  <span className="font-semibold text-accent text-[13px]">{v.voter}</span>
+                </div>
                 <StatusBadge v={v} />
               </div>
               <div className="text-[12px] text-app-text3 mb-0.5">

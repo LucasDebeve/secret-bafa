@@ -18,6 +18,10 @@ export default function Secrets() {
     () => (cSess.sessId ? cV.find((v) => v.voter === me!.id && v.sessId === cSess.sessId) : undefined),
     [cV, cSess.sessId, me]
   );
+  const myCorrectVote = useMemo(
+    () => (cSess.sessId ? cV.find((v) => v.voter === me!.id && v.sessId === cSess.sessId && v.guess === v.secretUid) : undefined),
+    [cV, cSess.sessId, me]
+  );
   const voteCount = useMemo(() => {
     const out: Record<string, number> = {};
     cV.forEach((v) => { out[v.sid] = (out[v.sid] || 0) + 1; });
@@ -56,7 +60,7 @@ export default function Secrets() {
     if (!guessed) return toast("Choisis un auteur !", "er");
     const s = cS.find((x) => x.id === sid);
     if (!s || s.uid === me.id) return toast("Pas ton propre secret !", "er");
-    if (cV.find((v) => v.voter === me.id && v.sessId === cSess.sessId)) return toast("Tu as deja vote !", "er");
+    if (cV.find((v) => v.voter === me.id && v.sessId === cSess.sessId && v.guess === v.secretUid)) return toast("Tu as deja vote correctement !", "er");
     const correct = guessed === s.uid;
     try {
       await addDoc(fCol(fid, "V"), {
@@ -70,7 +74,7 @@ export default function Secrets() {
         ts: serverTimestamp(),
       });
       if (!correct) {
-        const pRef = fDoc(fid, "P", s.uid);
+        const pRef = fDoc(fid, "P", guessed);
         const pSnap = await getDoc(pRef);
         if (pSnap.exists()) {
           await updateDoc(pRef, { total: increment(1), history: [...(pSnap.data().history || []), { type: "defense", pts: 1, ts: Date.now() }] });
@@ -125,9 +129,11 @@ export default function Secrets() {
         <div className="card-body">
           <div className="mb-4">
             {cSess.open ? (
-              myVote
-                ? <div className="sess-banner sess-banner-closed">Vote envoye ! Rendez-vous a la revelation.</div>
-                : <div className="sess-banner sess-banner-open"><strong>Votes ouverts !</strong>&nbsp;Un seul vote par session — choisis bien.</div>
+              myCorrectVote
+                ? <div className="sess-banner sess-banner-closed">Vote correct envoye ! Rendez-vous a la revelation.</div>
+                : myVote
+                  ? <div className="sess-banner sess-banner-open"><strong>Mauvais vote !</strong>&nbsp;Tu peux encore voter — reessaie !</div>
+                  : <div className="sess-banner sess-banner-open"><strong>Votes ouverts !</strong>&nbsp;Vote jusqu'a trouver le bon auteur.</div>
             ) : (
               <div className="sess-banner sess-banner-wait">Pas de session ouverte. L'animateur ouvrira les votes bientot.</div>
             )}
@@ -141,7 +147,7 @@ export default function Secrets() {
                 const isOwn = s.uid === me.id;
                 const vc = voteCount[s.id] || 0;
                 const myVoteOn = cV.find((v) => v.voter === me.id && v.sid === s.id);
-                const canVote = cSess.open && !isOwn && !myVote;
+                const canVote = cSess.open && !isOwn && !myCorrectVote;
                 return (
                   <div key={s.id} className={`secret-card ${isOwn ? "mine" : ""} ${myVoteOn ? "voted" : ""} ${s.found ? "found" : ""}`}>
                     {s.found && (
@@ -160,8 +166,6 @@ export default function Secrets() {
                       <div className="flex items-center gap-2 flex-wrap">
                         {isOwn ? (
                           <span className="text-[12px] text-app-text3">Ton secret</span>
-                        ) : myVoteOn ? (
-                          <span className="text-[12px] text-app-text3">Vote envoye</span>
                         ) : canVote ? (
                           <div className="flex items-center gap-2 flex-wrap">
                             <select
@@ -174,6 +178,8 @@ export default function Secrets() {
                             </select>
                             <button className="btn btn-sm" onClick={() => submitVote(s.id)}>Voter</button>
                           </div>
+                        ) : myVoteOn ? (
+                          <span className="text-[12px] text-app-text3">Vote envoye</span>
                         ) : (
                           <span className="text-[12px] text-app-text3">{cSess.open ? "Deja vote" : "Votes fermes"}</span>
                         )}
