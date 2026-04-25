@@ -18,10 +18,6 @@ export default function Secrets() {
     () => (cSess.sessId ? cV.find((v) => v.voter === me!.id && v.sessId === cSess.sessId) : undefined),
     [cV, cSess.sessId, me]
   );
-  const myCorrectVote = useMemo(
-    () => (cSess.sessId ? cV.find((v) => v.voter === me!.id && v.sessId === cSess.sessId && v.guess === v.secretUid) : undefined),
-    [cV, cSess.sessId, me]
-  );
   const voteCount = useMemo(() => {
     const out: Record<string, number> = {};
     cV.forEach((v) => { out[v.sid] = (out[v.sid] || 0) + 1; });
@@ -60,7 +56,7 @@ export default function Secrets() {
     if (!guessed) return toast("Choisis un auteur !", "er");
     const s = cS.find((x) => x.id === sid);
     if (!s || s.uid === me.id) return toast("Pas ton propre secret !", "er");
-    if (cV.find((v) => v.voter === me.id && v.sessId === cSess.sessId && v.guess === v.secretUid)) return toast("Tu as deja vote correctement !", "er");
+    if (myVote) return toast("Tu as deja vote cette session !", "er");
     try {
       await addDoc(fCol(fid, "V"), {
         voter: me.id,
@@ -119,11 +115,9 @@ export default function Secrets() {
         <div className="card-body">
           <div className="mb-4">
             {cSess.open ? (
-              myCorrectVote
-                ? <div className="sess-banner sess-banner-closed">Vote correct envoye ! Rendez-vous a la revelation.</div>
-                : myVote
-                  ? <div className="sess-banner sess-banner-open"><strong>Mauvais vote !</strong>&nbsp;Tu peux encore voter — reessaie !</div>
-                  : <div className="sess-banner sess-banner-open"><strong>Votes ouverts !</strong>&nbsp;Vote jusqu'a trouver le bon auteur.</div>
+              myVote
+                ? <div className="sess-banner sess-banner-closed">Vote envoye ! Rendez-vous a la revelation.</div>
+                : <div className="sess-banner sess-banner-open"><strong>Votes ouverts !</strong>&nbsp;Choisis l'auteur d'un secret.</div>
             ) : (
               <div className="sess-banner sess-banner-wait">Pas de session ouverte. L'animateur ouvrira les votes bientot.</div>
             )}
@@ -137,7 +131,7 @@ export default function Secrets() {
                 const isOwn = s.uid === me.id;
                 const vc = voteCount[s.id] || 0;
                 const myVoteOn = cV.find((v) => v.voter === me.id && v.sid === s.id);
-                const canVote = cSess.open && !isOwn && !myCorrectVote;
+                const canVote = cSess.open && !isOwn && !myVote;
                 return (
                   <div key={s.id} className={`secret-card ${isOwn ? "mine" : ""} ${myVoteOn ? "voted" : ""} ${s.found ? "found" : ""}`}>
                     {s.found && (
